@@ -6,16 +6,16 @@
 template<typename F, typename U>
 typename F::lattice_t::size_t sweep(F &field, U update) {
     auto lat = field.lat;
-    typename F::lattice_t::size_t acceptance = 0;
+    typename F::lattice_t::size_t accepted = 0;
     for (auto i = 0; i < lat.n_elements / 2; ++i) {
         auto site = lat.even(i);
-        acceptance += update(field, site);
+        accepted += update(field, site);
     }
 
     for (auto i = 0; i < lat.n_elements / 2; ++i) {
         auto site = lat.odd(i);
-        acceptance += update(field, site);
+        accepted += update(field, site);
     }
 
-    return acceptance;
+    return accepted;
 }

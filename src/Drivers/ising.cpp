@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     bool cold_start = false;
     double beta;
 
-    std::mt19937_64::result_type seed=std::mt19937_64::default_seed;
+    std::mt19937_64::result_type seed = std::mt19937_64::default_seed;
 
     auto cli = lyra::cli()
                | lyra::opt(Lx, "Lx")["-x"]["--Lx"]("Lx")
@@ -30,17 +30,15 @@ int main(int argc, char *argv[]) {
                | lyra::opt(seed, "seed")["--seed"]("seed");
 
 
-
     auto results = cli.parse({argc, argv});
     if (!results) {
         std::cerr << "Error in command line: " << results.message() << std::endl;
-        return(1);
+        return (1);
     }
     std::mt19937_64 rng(seed);
     spdlog::default_logger()->set_level(spdlog::level::warn);
 
-    spdlog::debug("Lx {} Ly {} beta {} n-sweeps {} seed {} cold-start {}", Lx, Ly, beta, n_sweeps, seed , cold_start);
-
+    spdlog::debug("Lx {} Ly {} beta {} n-sweeps {} seed {} cold-start {}", Lx, Ly, beta, n_sweeps, seed, cold_start);
 
 
     using lattice_t = Lattice<uint32_t>;
@@ -50,10 +48,10 @@ int main(int argc, char *argv[]) {
         ising::hot_start(ising, rng);
 
     ising::HeathBath<lattice_t> update(beta, rng);
-    for(std::size_t i=0;i<n_term;i++) {
+    for (std::size_t i = 0; i < n_term; i++) {
         sweep(ising, update);
     }
     std::cout.precision(12);
-    std::cout<<ising::M(ising)<<"\n";
+    std::cout << ising::M(ising) << "\n";
     return 0;
 }

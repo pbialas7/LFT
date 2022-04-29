@@ -16,14 +16,13 @@ class Field {
 public:
     using field_t = F;
     using lattice_t = L;
-    static const int DIM = lattice_t ::DIM;
+    static const int DIM = lattice_t::DIM;
 private:
     static std::size_t n_elem(std::array<int, DIM> dims) {
         return dims[0] * dims[1];
     }
 
 public:
-
 
 
     const size_t n_elements;
@@ -46,40 +45,45 @@ public:
     }
 
 
-
-    field_t  up_corona(typename lattice_t::size_t i) const {
-        field_t corona_= field_t(0);
-        for(auto d=0;d<DIM;++d) {
-            corona_+= field_[lat.up(i,d)];
+    field_t up_corona(typename lattice_t::size_t i) const {
+        field_t corona_ = field_t(0);
+        for (auto d = 0; d < DIM; ++d) {
+            corona_ += field_[lat.up(i, d)];
         }
         return corona_;
     }
 
-    field_t  dn_corona(typename lattice_t::size_t i) const {
-        field_t corona_= field_t(0);
-        for(auto d=0;d<DIM;++d) {
-            corona_+= field_[lat.dn(i,d)];
+    field_t dn_corona(typename lattice_t::size_t i) const {
+        field_t corona_ = field_t(0);
+        for (auto d = 0; d < DIM; ++d) {
+            corona_ += field_[lat.dn(i, d)];
         }
         return corona_;
     }
 
-    field_t  corona(typename lattice_t::size_t i) const {
-        return up_corona(i)+ dn_corona(i);
+    field_t corona(typename lattice_t::size_t i) const {
+        return up_corona(i) + dn_corona(i);
+    }
+
+    const field_t *data() const {
+        return field_.data();
     }
 
 private:
     std::vector<field_t> field_;
 };
 
-template<typename Res, typename F> Res sum(const F& field)  {
+template<typename Res, typename F>
+Res sum(const F &field) {
     Res sum = Res(0);
-    for(auto i=0;i<field.n_elements;++i)
-        sum+=field[i];
+    for (auto i = 0; i < field.n_elements; ++i)
+        sum += field[i];
     return sum;
 }
 
-template<typename Float, typename F> Float mean(const F& field)  {
-    return sum<Float, F>(field)/field.n_elements;
+template<typename Float, typename F>
+Float mean(const F &field) {
+    return sum<Float, F>(field) / field.n_elements;
 }
 
 
