@@ -6,6 +6,19 @@
 
 #include "Field/Lattice.h"
 
+TEST_CASE("Latttice constructors indexing 1D", "[Constructors] [Lattice][1D]{indexing") {
+    const int Lx = 8;
+
+    Lattice<int8_t,1> lattice({Lx});
+    REQUIRE(lattice.n_elements == 8);
+
+    for(int i=0;i<Lx;i++) {
+        REQUIRE(int(lattice.up(i,0))==(i+1)%Lx);
+        REQUIRE(int(lattice.dn(i,0))==(i-1+Lx)%Lx);
+    }
+
+}
+
 TEST_CASE("Latttice constructors", "[Constructors] [Lattice]") {
     const int Lx = 8;
     const int Ly = 8;

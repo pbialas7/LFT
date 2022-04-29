@@ -14,15 +14,16 @@ template<typename F, typename L=Lattice<>>
 class Field {
 
 public:
-    static const int DIM = 2;
+    using field_t = F;
+    using lattice_t = L;
+    static const int DIM = lattice_t ::DIM;
 private:
     static std::size_t n_elem(std::array<int, DIM> dims) {
         return dims[0] * dims[1];
     }
 
 public:
-    using field_t = F;
-    using lattice_t = L;
+
 
 
     const size_t n_elements;

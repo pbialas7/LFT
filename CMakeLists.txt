@@ -36,3 +36,5 @@ add_executable(ising src/Drivers/ising.cpp)
 target_link_libraries(ising PRIVATE lft lyra spdlog::spdlog)
 #set_target_properties(ising PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 
+add_executable(ising1d src/Drivers/ising1d.cpp)
+target_link_libraries(ising1d PRIVATE lft lyra spdlog::spdlog)
