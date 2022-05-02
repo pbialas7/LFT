@@ -11,7 +11,13 @@
 #include "Phi4/phi4.h"
 #include "MonteCarlo/sweep.h"
 
+#include "spdlog/sinks/stdout_color_sinks.h"
+
+
 int main(int argc, char *argv[]) {
+
+    auto console = spdlog::stdout_color_mt("console");
+    console->set_level(spdlog::level::debug);
 
 
     int Lx = 0, Ly = 0;
@@ -38,7 +44,8 @@ int main(int argc, char *argv[]) {
                lyra::opt(n_term, "n term ")["-t"]["--n-term"]("number of termalisation sweeps") |
                lyra::opt(cold_start)["-c"]["--cold-start"]("cold start") |
                lyra::opt(save_freq, "save freq")["--save-freq"]("configuration save frequency") |
-               lyra::opt(seed, "seed")["--seed"]("");
+               lyra::opt(seed, "seed")["--seed"]("") |
+               lyra::opt(out_file_name, "output")["-o"]["--output"]("congigurations output file");
 
 
     auto results = cli.parse({argc, argv});
@@ -49,11 +56,13 @@ int main(int argc, char *argv[]) {
     std::mt19937_64 rng(seed);
     spdlog::default_logger()->set_level(spdlog::level::warn);
 
-    spdlog::debug("Lx {} Ly {} M2 {} n-sweeps {} seed {} cold-start {}", Lx, Ly, M2, n_sweeps, seed, cold_start);
+    console->debug("Lx {} Ly {} M2 {} n-sweeps {} seed {} output {} cold-start {}", Lx, Ly, M2, n_sweeps, seed,
+                   out_file_name, cold_start);
 
 
     using lattice_t = Lattice<uint32_t>;
     lattice_t lat({Lx, Ly});
+
     using phi_t = phi4::ScalarField<lattice_t>;
     phi_t phi(lat, 1.0);
     if (!cold_start)
@@ -70,6 +79,7 @@ int main(int argc, char *argv[]) {
         out_cfg.open(out_file_name.c_str(), std::ios::binary);
     }
     double acceptance = 0.0;
+    console->debug("n sweeps {}", n_sweeps);
     for (std::size_t i = 0; i < n_sweeps; i++) {
         auto accepted = sweep(phi, update);
         auto accept = (double) accepted / phi.n_elements;
@@ -78,5 +88,6 @@ int main(int argc, char *argv[]) {
             out_cfg.write((const char *) phi.data(), phi.n_elements * sizeof(phi_t::field_t));
     }
     out_cfg.close();
+    console->debug("acceptance {}", acceptance);
     std::cout << "acceptance = " << acceptance / n_sweeps << "\n";
 }
