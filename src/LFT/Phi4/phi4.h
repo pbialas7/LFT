@@ -30,31 +30,40 @@ namespace phi4 {
             proposal_.param(param_type{0.0, eps});
         }
 
+        field_t point_action(field_t phi, field_t corona) {
+            return -kappa_ * phi * corona + phi * phi * (0.5 * (m2_ + 4.0 * kappa_) + 0.25 * lambda_ * phi * phi);
+        }
+
         size_t operator()(Field &field, size_t site) {
 
             auto corona = field.corona(site);
+
+            size_t accepted = 0;
             auto phi = field[site];
-            auto action = -kappa_ * phi * corona + (m2_ + 4.0 * kappa_) * phi * phi + lambda_ * phi * phi * phi * phi;
-            auto phi_proposed = phi + proposal_(rng_);
-            auto action_proposed =
-                    -kappa_ * phi_proposed * corona + (m2_ + 4.0 * kappa_) * phi_proposed * phi_proposed +
-                    lambda_ * phi_proposed * phi_proposed * phi_proposed * phi_proposed;
+            auto action = point_action(phi, corona);
+            for (size_t i = 0; i < 4; i++) {
+                auto phi_proposed = phi + proposal_(rng_);
+                auto action_proposed = point_action(phi_proposed, corona);
 
-            auto action_diff = action_proposed - action;
 
-            if (-action_diff >= 0) {
-                goto accept;
-            } else {
-                auto r = uni_(rng_);
-                if (std::exp(-action_diff) > r)
+                auto action_diff = action_proposed - action;
+
+                if (-action_diff >= 0) {
                     goto accept;
+                } else {
+                    auto r = uni_(rng_);
+                    if (std::exp(-action_diff) > r)
+                        goto accept;
+                }
+                continue;
+
+                accept:
+                action = action_proposed;
+                field[site] = phi = phi_proposed;
+                accepted += 1;
+
             }
-            return 0;
-
-            accept:
-            field[site] = phi_proposed;
-            return 1;
-
+            return accepted;
         }
 
     private:
