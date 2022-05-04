@@ -4,7 +4,7 @@ project(main LANGUAGES CXX)
 include(FetchContent)
 include(ExternalProject)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 FetchContent_Declare(
         spdlog
@@ -13,6 +13,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
+
+FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(fmt)
 
 FetchContent_Declare(
         Catch2
@@ -40,4 +47,4 @@ add_executable(ising1d src/Drivers/ising1d.cpp)
 target_link_libraries(ising1d PRIVATE lft lyra spdlog::spdlog)
 
 add_executable(phi4 src/Drivers/phi4.cpp)
-target_link_libraries(phi4 PRIVATE lft lyra spdlog::spdlog)
+target_link_libraries(phi4 PRIVATE lft lyra spdlog::spdlog fmt::fmt)

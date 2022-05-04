@@ -22,9 +22,11 @@ namespace phi4 {
         using proposal_dist = std::normal_distribution<field_t>;
         using param_type = typename proposal_dist::param_type;
 
-        Metropolis(field_t kappa, field_t m2, field_t lambda, rng_t &rng) : kappa_(kappa), m2_(m2), lambda_(lambda),
-                                                                            rng_(rng), proposal_{},
-                                                                            uni_{0.0, 1.0} {}
+        Metropolis(field_t kappa, field_t m2, field_t lambda, int n_hits, rng_t &rng) : kappa_(kappa), m2_(m2),
+                                                                                        lambda_(lambda),
+                                                                                        n_hits_(n_hits),
+                                                                                        rng_(rng), proposal_{},
+                                                                                        uni_{0.0, 1.0} {}
 
         void set_eps(field_t eps) {
             proposal_.param(param_type{0.0, eps});
@@ -41,7 +43,7 @@ namespace phi4 {
             size_t accepted = 0;
             auto phi = field[site];
             auto action = point_action(phi, corona);
-            for (size_t i = 0; i < 4; i++) {
+            for (size_t i = 0; i < n_hits_; i++) {
                 auto phi_proposed = phi + proposal_(rng_);
                 auto action_proposed = point_action(phi_proposed, corona);
 
@@ -71,6 +73,7 @@ namespace phi4 {
         field_t m2_;
         field_t lambda_;
         rng_t &rng_;
+        int n_hits_;
         proposal_dist proposal_;
         std::uniform_real_distribution<field_t> uni_;
     };

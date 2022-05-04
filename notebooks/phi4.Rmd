@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.11.5
+      jupytext_version: 1.13.8
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -15,15 +15,86 @@ jupyter:
 ```{python}
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams['figure.figsize']=(12,8)
 ```
 
 ```{python}
-data = np.fromfile('../data/k100_m114_16x16.bin', dtype=np.float32).reshape(-1,16,16)
+import os
+```
+
+```{python}
+import re
+
+def get_data(dir, L):
+    file_regex = f'k100_(m|p)(\\d{{3,5}})_{L:02d}x{L:02d}.bin'
+    #print(file_regex)
+    data_sets = []
+    for item in os.listdir(dir):
+        path =dir+'/'+item 
+        if not os.path.isfile(path):
+            continue
+        if not (m:=re.match(file_regex,item)):
+            continue
+        m2s = m.group(2)
+        m2 = int(m2s)/np.power(10.0,len(m2s)-1)
+        data_sets.append( (m2, np.fromfile(path, dtype=np.float32).reshape(-1,L,L)) )
+    
+    return sorted(data_sets, key=lambda x: x[0])
+
+def magnetisation(data):
+    return data.sum((-1,-2))
+```
+
+```{python}
+data_sets_08 = get_data('../data/', 8)
+```
+
+```{python}
+data_sets_16 = get_data('../data/', 16)
+```
+
+```{python}
+amag_08 = np.asarray(
+    [ (b, np.abs(magnetisation(d)).mean()/64)
+     for b,d in data_sets_08]
+)
+amag_16 = np.asarray(
+    [ (b, np.abs(magnetisation(d)).mean()/256)
+     for b,d in data_sets_16]
+)
+```
+
+```{python}
+plt.scatter(amag_08[:,0], amag_08[:,1], label='8');
+plt.scatter(amag_16[:,0], amag_16[:,1], label='16');
+plt.grid();
+plt.legend();
+```
+
+```{python}
+susc_08=np.asarray([(b, np.abs(magnetisation(d)).var()/64 ) for b,d in data_sets_08])
+susc_16=np.asarray([(b, np.abs(magnetisation(d)).var()/256 ) for b,d in data_sets_16])
+```
+
+```{python}
+plt.scatter(susc_08[:,0], susc_08[:,1], label='8');
+plt.scatter(susc_16[:,0], susc_16[:,1], label='16');
+plt.xlim(0.5,1.7)
+plt.grid();
+plt.legend();
+```
+
+```{python}
+susc_16[susc_16[:,1].argmax(),0]
+```
+
+```{python}
+data = np.fromfile('../data/k100_m140_16x16.bin', dtype=np.float32).reshape(-1,16,16)
 len(data)
 ```
 
 ```{python}
-mag=data.sum((-1,-2))
+mag=magnetisation(data)/256
 ```
 
 ```{python}
@@ -33,51 +104,6 @@ plt.hist(mag,bins=100);
 
 ```{python}
 plt.plot(mag,'.');
-```
-
-```{python}
-import os
-```
-
-```{python}
-os.listdir('../data')
-```
-
-```{python}
-import re
-data_sets = []
-for item in os.listdir('../data'):
-    path ='../data/'+item 
-    if not os.path.isfile(path):
-        continue
-    if not (m:=re.match(r'k100_m(\d{3})_16x16.bin',item)):
-        continue
-    print(item)    
-    b = m.group(1)    
-    data_sets.append( (int(b)/100.0, np.fromfile(path, dtype=np.float32).reshape(-1,16,16)) )
-data_sets = sorted(data_sets, key=lambda x: x[0])
-```
-
-```{python}
-amag=np.asarray([(b, np.abs(d.sum((-1,-2))).mean()/256) for b,d in data_sets])
-```
-
-```{python}
-plt.scatter(amag[:,0], amag[:,1]);
-plt.grid();
-```
-
-```{python}
-susc=np.asarray([(b, np.abs(d.sum((-1,-2))/256).var()) for b,d in data_sets])
-```
-
-```{python}
-plt.scatter(susc[:,0], susc[:,1]);
-plt.grid();
-```
-
-```{python}
-
 ```
 
 ```{python}

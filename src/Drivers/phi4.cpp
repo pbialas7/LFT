@@ -4,9 +4,12 @@
 
 #include <random>
 #include <fstream>
+#include <chrono>
 
 #include "lyra/lyra.hpp"
 #include "spdlog/spdlog.h"
+#include <fmt/core.h>
+#include <fmt/chrono.h>
 
 #include "Phi4/phi4.h"
 #include "MonteCarlo/sweep.h"
@@ -29,6 +32,7 @@ int main(int argc, char *argv[]) {
     double eps = 0.5;
     int save_freq = 0;
     std::string out_file_name = "o.bin";
+    int n_hits=4;
 
 
     std::mt19937_64::result_type seed = std::mt19937_64::default_seed;
@@ -45,7 +49,8 @@ int main(int argc, char *argv[]) {
                lyra::opt(cold_start)["-c"]["--cold-start"]("cold start") |
                lyra::opt(save_freq, "save freq")["--save-freq"]("configuration save frequency") |
                lyra::opt(seed, "seed")["--seed"]("") |
-               lyra::opt(out_file_name, "output")["-o"]["--output"]("congigurations output file");
+               lyra::opt(out_file_name, "output")["-o"]["--output"]("congigurations output file") |
+               lyra::opt(n_hits, "n hits")["--n-hits"]("Number of hits in multi-hit metropolis (=4)");
 
 
     auto results = cli.parse({argc, argv});
@@ -68,8 +73,10 @@ int main(int argc, char *argv[]) {
     if (!cold_start)
         phi4::hot_start(phi, rng);
 
-    phi4::Metropolis<lattice_t> update(kappa, M2, lambda, rng);
+    phi4::Metropolis<lattice_t> update(kappa, M2, lambda, n_hits, rng);
     update.set_eps(eps);
+
+    auto start = std::chrono::steady_clock::now();
     for (std::size_t i = 0; i < n_term; i++) {
         sweep(phi, update);
     }
@@ -88,6 +95,10 @@ int main(int argc, char *argv[]) {
             out_cfg.write((const char *) phi.data(), phi.n_elements * sizeof(phi_t::field_t));
     }
     out_cfg.close();
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    fmt::print("elapsed time {}\n", elapsed_seconds);
+
     console->debug("acceptance {}", acceptance);
     std::cout << "acceptance = " << acceptance / n_sweeps << "\n";
 }
