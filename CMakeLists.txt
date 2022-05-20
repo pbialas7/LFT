@@ -4,7 +4,7 @@ project(main LANGUAGES CXX)
 include(FetchContent)
 include(ExternalProject)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 
 FetchContent_Declare(
         spdlog
@@ -16,7 +16,7 @@ FetchContent_MakeAvailable(spdlog)
 
 FetchContent_Declare(
         fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_REPOSITORY https://github.com/pbialas7/fmt.git
         GIT_TAG master
 )
 FetchContent_MakeAvailable(fmt)

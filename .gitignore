@@ -12,3 +12,7 @@ notebooks/.ipynb_checkpoints/
 *.bin
 
 *.ipynb
+
+build/
+
+*.out

@@ -5,20 +5,18 @@
 #include <random>
 #include <fstream>
 #include <chrono>
+#include <cmath>
 
 #include "lyra/lyra.hpp"
-#include "spdlog/spdlog.h"
-#include <fmt/core.h>
-#include <fmt/chrono.h>
+
 
 #include "Phi4/phi4.h"
 #include "MonteCarlo/sweep.h"
 
 #include "spdlog/sinks/stdout_color_sinks.h"
-
+#include <fmt/chrono.h>
 
 int main(int argc, char *argv[]) {
-
     auto console = spdlog::stdout_color_mt("console");
     console->set_level(spdlog::level::debug);
 
@@ -32,7 +30,7 @@ int main(int argc, char *argv[]) {
     double eps = 0.5;
     int save_freq = 0;
     std::string out_file_name = "o.bin";
-    int n_hits=4;
+    int n_hits = 4;
 
 
     std::mt19937_64::result_type seed = std::mt19937_64::default_seed;
@@ -96,7 +94,7 @@ int main(int argc, char *argv[]) {
     }
     out_cfg.close();
     auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::chrono::duration<double> elapsed_seconds = end - start;
     fmt::print("elapsed time {}\n", elapsed_seconds);
 
     console->debug("acceptance {}", acceptance);
