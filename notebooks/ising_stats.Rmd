@@ -1,0 +1,95 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.13.7
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+import numpy as np
+import scipy as sp
+import scipy.stats as st
+from scipy.optimize import fsolve
+import matplotlib.pyplot as plt
+```
+
+```{python}
+import stats_utils as su
+```
+
+```{python}
+cfgs = np.loadtxt('../data/cfg_x016_b0100.txt');len(cfgs)
+```
+
+```{python}
+cfgs.dtype
+```
+
+```{python}
+m=cfgs.sum(1).astype('int64')
+```
+
+```{python}
+n=100
+plt.scatter(np.arange(len(m[:n])), m[:n],s=10);
+```
+
+```{python}
+su.ac_and_tau_int(m)
+```
+
+```{python}
+counts, bins,_ =plt.hist(m[:400],range=(-16.5,16.5), bins=33,density=True)
+err = np.sqrt(counts/400)
+ms = (bins[1:]+bins[:-1])/2
+plt.hist(m[:],range=(-16.5,16.5), bins=33,density=True)
+plt.errorbar(ms, counts,yerr=err, fmt='none',color='red');
+```
+
+```{python}
+bins
+```
+
+```{python}
+def gen_states(values, n):
+    arrays = [values] * n
+    return np.array(np.meshgrid(*arrays)).T.reshape(-1, n)
+```
+
+```{python}
+def apply(f, states):
+    return np.apply_along_axis(f, 1, states)
+```
+
+```{python}
+S = gen_states([-1,1],16)
+```
+
+```{python}
+def energy1D(S):
+    return -np.sum(np.roll(S, 1) * S)
+
+
+def magnetisation1D(S):
+    return S.sum()
+```
+
+```{python}
+e = apply(energy1D, S)
+mag = apply(magnetisation1D, S)
+```
+
+```{python}
+plt.hist(mag,weights=np.exp(-e),range=(-16.5,16.5), bins=33, density=True);
+```
+
+```{python}
+
+```
