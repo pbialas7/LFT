@@ -48,3 +48,6 @@ target_link_libraries(ising1d PRIVATE lft lyra spdlog::spdlog)
 
 add_executable(phi4 src/Drivers/phi4.cpp)
 target_link_libraries(phi4 PRIVATE lft lyra spdlog::spdlog fmt::fmt)
+
+add_executable(xy src/Drivers/xy.cpp src/LFT/XY/xy.h)
+target_link_libraries(xy PRIVATE lft lyra spdlog::spdlog fmt::fmt)
