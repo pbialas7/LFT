@@ -39,7 +39,7 @@ FetchContent_MakeAvailable(lyra)
 add_subdirectory(src/LFT)
 add_subdirectory(tests)
 
-add_executable(ising src/Drivers/ising.cpp)
+add_executable(ising src/Drivers/ising.cpp src/LFT/Ising/correlation_function.h)
 target_link_libraries(ising PRIVATE lft lyra spdlog::spdlog)
 #set_target_properties(ising PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 

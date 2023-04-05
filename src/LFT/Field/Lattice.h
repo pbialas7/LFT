@@ -130,12 +130,9 @@ public:
         return idx;
     }
 
-    size_t
-
-    up(size_t i, int dim) const { return up_[DIM * i + dim]; }
+    size_t up(size_t i, int dim) const { return up_[DIM * i + dim]; }
 
     size_t dn(size_t i, int dim) const { return dn_[DIM * i + dim]; }
-
 
     size_t even(size_t i) const { return even_[i]; }
 
