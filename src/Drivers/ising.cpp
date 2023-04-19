@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
                | lyra::opt(Lx, "Lx")["-x"]["--Lx"]("Lx")
                | lyra::opt(Ly, "Ly")["-y"]["--Ly"]("Ly")
                | lyra::opt(beta, "beta")["-b"]["--beta"]("inverse temperature")
-               | lyra::opt(n_sweeps, "n sweeps ")["-n"]("number of measurment sweeps")
+               | lyra::opt(n_sweeps, "n sweeps ")["-n"]["--n-sweeps"]("number of measurment sweeps")
                | lyra::opt(n_term, "n term ")["-t"]["--n-term"]("number of termalisation sweeps")
                | lyra::opt(cold_start)["-c"]["--cold-start"]("cold start")
                | lyra::opt(seed, "seed")["--seed"]("seed")
@@ -63,12 +63,12 @@ int main(int argc, char *argv[]) {
     std::fstream energy_mag{std::string("em_") + name + ".txt", energy_mag.out | energy_mag.trunc};
     std::fstream correlations{std::string("cor_") + name + ".bin",
                               correlations.binary | correlations.out | correlations.trunc};
-    std::vector<double> cor_function(Lx/2, 0.0);
+    std::vector<double> cor_function(Lx, 0.0);
     for (std::size_t i = 0; i < n_sweeps; i++) {
         sweep(ising, update);
         if ((i + 1) % meas_freq == 0) {
             energy_mag << ising::energy<double>(ising) << " " << ising::magnetisation<double>(ising) << "\n";
-            std::fill_n(cor_function.begin(), Lx / 2, 0.0);
+            std::fill_n(cor_function.begin(), Lx, 0.0);
             correlation<double>(ising, cor_function);
             correlations.write(reinterpret_cast<char *>(cor_function.data()), cor_function.size() * sizeof(double));
         }
