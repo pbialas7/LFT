@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.13.7
+      jupytext_version: 1.14.5
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -18,6 +18,7 @@ import scipy as sp
 import scipy.stats as st
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
+import re
 ```
 
 ```{python}
@@ -25,11 +26,35 @@ import stats_utils as su
 ```
 
 ```{python}
-cfgs = np.loadtxt('../data/cfg_x016_b0100.txt');len(cfgs)
+name_pattern = re.compile(r"cfg_x(\d\d\d)_b(\d{4})\.txt")
 ```
 
 ```{python}
-cfgs.dtype
+def xi(beta):
+    return -1.0/np.log(np.tanh(beta))
+```
+
+```{python}
+data_dir ='data'
+```
+
+```{python}
+name='cfg_x032_b2500.txt'
+```
+
+```{python}
+match = name_pattern.match(name)
+L = int(match.group(1))
+beta = int(match.group(2))/1000.0
+print(L,beta,f"{xi(beta):.2f}")
+```
+
+```{python}
+cfgs = np.loadtxt(f'../data/{name:s}');len(cfgs)
+```
+
+```{python}
+cfgs.shape
 ```
 
 ```{python}
@@ -37,24 +62,26 @@ m=cfgs.sum(1).astype('int64')
 ```
 
 ```{python}
-n=100
+m.max()
+```
+
+```{python}
+n=1000
 plt.scatter(np.arange(len(m[:n])), m[:n],s=10);
 ```
 
 ```{python}
-su.ac_and_tau_int(m)
+tau, corr = su.ac_and_tau_int(m)
+plt.scatter(np.arange(0,len(corr)), corr, s=4)
+print(tau)
 ```
 
 ```{python}
-counts, bins,_ =plt.hist(m[:400],range=(-16.5,16.5), bins=33,density=True)
-err = np.sqrt(counts/400)
+l = 200
+counts, bins,_ =plt.hist(m[::l],range=(-L-0.5,L+0.5), bins=2*L+1,density=True)
+err = np.sqrt(counts/l)
 ms = (bins[1:]+bins[:-1])/2
-plt.hist(m[:],range=(-16.5,16.5), bins=33,density=True)
 plt.errorbar(ms, counts,yerr=err, fmt='none',color='red');
-```
-
-```{python}
-bins
 ```
 
 ```{python}
