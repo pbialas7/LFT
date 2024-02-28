@@ -46,6 +46,9 @@ target_link_libraries(ising PRIVATE lft lyra spdlog::spdlog)
 add_executable(ising1d src/Drivers/ising1d.cpp)
 target_link_libraries(ising1d PRIVATE lft lyra spdlog::spdlog)
 
+add_executable(ising3d  src/Drivers/ising3d.cpp)
+target_link_libraries(ising3d PRIVATE lft lyra spdlog::spdlog)
+
 add_executable(phi4 src/Drivers/phi4.cpp)
 target_link_libraries(phi4 PRIVATE lft lyra spdlog::spdlog fmt::fmt)
 

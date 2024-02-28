@@ -25,7 +25,16 @@ import stats_utils as su
 ```
 
 ```{python}
-cfgs = np.loadtxt('../data/cfg_x016_b0100.txt');len(cfgs)
+name='cfg_x064_b0000.txt'
+```
+
+```{python}
+L, beta = su.parse_filename(name)
+print(L,beta,f"{su.xi(beta):.2f}")
+```
+
+```{python}
+cfgs = np.loadtxt(f'../data2/{name:s}');len(cfgs)
 ```
 
 ```{python}
@@ -123,6 +132,34 @@ cfgs.shape
 
 ```{python}
 np.sum(np.roll(cfgs,1,1)*cfgs,1).mean()
+```
+
+```{python}
+from pathlib import Path
+```
+
+```{python}
+conv = make_convolve(kernel)
+```
+
+```{python}
+bs = ["0018", '0136', '0386', '0703', '1042', '1387', '1733', '2079'] 
+bs = ["0000"]
+for b in bs:
+    name=f'cfg_x064_b{b}.txt'
+    print(name)
+    path = Path(name)
+
+    L, beta = su.parse_filename(name)
+    print(L,beta,f"{su.xi(beta):.2f}")
+
+    cfgs = np.loadtxt(f'../data2/{name:s}');len(cfgs)
+
+    s_cfgs=conv(cfgs)
+    print(np.max(np.abs(np.sign(s_cfgs)-cfgs)))
+
+    np.save(f"../data2/s_{path.stem}", s_cfgs)
+    np.save(f"../data2/{path.stem}", cfgs)
 ```
 
 ```{python}

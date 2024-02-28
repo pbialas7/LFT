@@ -4,7 +4,7 @@ import numpy as np
 
 L = 64
 
-for beta in np.arange(2.0/3.0,3.0,0.2):
+for beta in np.arange(0.75,1.25,0.1):
     b2i = int(1000 * beta)
     start = time.time()
     results = proc.run(

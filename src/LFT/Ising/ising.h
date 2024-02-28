@@ -60,8 +60,8 @@ namespace ising {
     }
 
     template<typename F>
-    int32_t M(const F &f) {
-        return sum<int32_t>(f);
+    int64_t M(const F &f) {
+        return sum<int64_t>(f);
     }
 
     template<typename Float, typename F>
@@ -75,6 +75,15 @@ namespace ising {
         for (int i = 0; i < f.n_elements; ++i)
             e += f.up_corona(i) * f[i];
         return e / f.n_elements;
+    }
+
+
+    template<typename F>
+    int64_t E(const F &f) {
+        int64_t e = 0;
+        for (int i = 0; i < f.n_elements; ++i)
+            e += f.up_corona(i) * f[i];
+        return e;
     }
 
 

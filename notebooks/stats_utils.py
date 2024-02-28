@@ -1,5 +1,16 @@
+import re
 import numpy as np
 
+name_pattern = re.compile(r"cfg_x(\d\d\d)_b(\d{4})\.txt")
+
+def parse_filename(name):
+    match = name_pattern.match(name)
+    L = int(match.group(1))
+    beta = int(match.group(2))/1000.0
+    return L,beta    
+
+def xi(beta):
+    return -1.0/np.log(np.tanh(beta))
 
 def block_mean(sample, block_size):
     n_blocks = len(sample) // block_size
