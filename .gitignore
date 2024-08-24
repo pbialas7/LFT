@@ -17,38 +17,11 @@ build/
 
 *.out
 
-am_b00000_008x008.txt
-
-am_b00000_030x030.txt
-
-am_b01000_064x064.txt
-
-em_beta0100.txt
-
-em_beta0150.txt
-
-em_beta0200.txt
-
-em_beta0250.txt
-
-em_beta0300.txt
-
-em_beta0350.txt
-
-em_beta0400.txt
-
-em_beta0440.txt
-
-em_beta0470.txt
-
-em_beta0500.txt
-
-em_beta0600.txt
-
-em_beta0700.txt
-
-em_beta0800.txt
-
-em_beta0900.txt
+em3d_*.txt
+em_beta*.txt
+am_*.txt
+cfg_*
 
 meas.txt
+/phi4_data/**
+/data2/**

@@ -13,8 +13,9 @@
 #include "Phi4/phi4.h"
 #include "MonteCarlo/sweep.h"
 
+#include "spdlog/spdlog.h"
+#include "spdlog/fmt/chrono.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
-#include <fmt/chrono.h>
 
 int main(int argc, char *argv[]) {
     auto console = spdlog::stdout_color_mt("console");
@@ -41,7 +42,7 @@ int main(int argc, char *argv[]) {
                lyra::opt(kappa, "kappa")["-k"]["--kappa"]("") |
                lyra::opt(M2, "M2")["--M2"]("e") |
                lyra::opt(lambda, "lambda")["-l"]["--lambda"]("") |
-               lyra::opt(eps, "eps")["-l"]["--eps"]("") |
+               lyra::opt(eps, "eps")["-e"]["--eps"]("") |
                lyra::opt(n_sweeps, "n sweeps ")["-n"]["--n-sweeps"]("number of measurment sweeps") |
                lyra::opt(n_term, "n term ")["-t"]["--n-term"]("number of termalisation sweeps") |
                lyra::opt(cold_start)["-c"]["--cold-start"]("cold start") |
@@ -97,6 +98,6 @@ int main(int argc, char *argv[]) {
     std::chrono::duration<double> elapsed_seconds = end - start;
     fmt::print("elapsed time {}\n", elapsed_seconds);
 
-    console->debug("acceptance {}", acceptance);
+    console->debug("accepted {}", acceptance);
     std::cout << "acceptance = " << acceptance / n_sweeps << "\n";
 }

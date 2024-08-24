@@ -6,12 +6,12 @@
 #include <cmath>
 #include <random>
 
-#include "spdlog/spdlog.h"
-
 #include "Field/Field.h"
 
 namespace phi4 {
     template<typename L> using ScalarField = Field<float, L>;
+    float inv_4factorial = 1.0 / 24.0;
+
 
     template<typename L, typename RNG=std::mt19937_64>
     struct Metropolis {
@@ -33,7 +33,8 @@ namespace phi4 {
         }
 
         field_t point_action(field_t phi, field_t corona) {
-            return -kappa_ * phi * corona + phi * phi * (0.5 * (m2_ + 4.0 * kappa_) + 0.25 * lambda_ * phi * phi);
+            return -kappa_ * phi * corona +
+                   phi * phi * (0.5 * (m2_ + 4.0 * kappa_) + inv_4factorial * lambda_ * phi * phi);
         }
 
         size_t operator()(Field &field, size_t site) {
