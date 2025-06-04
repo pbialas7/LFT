@@ -1,0 +1,227 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.16.4
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+```
+
+```{python}
+from neumc.utils.stats_utils import ac_and_tau_int, bootstrap
+```
+
+```{python}
+sizes = [16,32,64,128,256]
+```
+
+```{python}
+data = {}
+for L in sizes:
+  path = Path(f'cfg_{L}x{L}_b44069_wolff.bin')
+  if path.exists():
+    cfg = np.fromfile(f'cfg_{L}x{L}_b44069_wolff.bin',dtype=np.int8).reshape(-1,L,L)
+    data[L]=cfg
+```
+
+```{python}
+mag={}
+for L,d in data.items():
+  mag[L]=d.mean(axis=(1,2))
+```
+
+```{python}
+if 256 in data:
+  tau, ac = ac_and_tau_int(mag[256])
+  print(tau)
+  print(data[L].shape)
+```
+
+```{python}
+for L in sorted(mag.keys()):
+  print(L, np.abs(mag[L]).mean())
+```
+
+```{python}
+em = np.loadtxt('em_512x512_b44069_wolff.txt')
+print(em.shape)
+```
+
+```{python}
+np.abs(em).mean(0)
+```
+
+```{python}
+for L in sorted(mag.keys()):
+  plt.hist(mag[L],bins=100,density=True, histtype='step', label=f'L={L}');
+plt.hist(em[:,1], bins=100, density=True, histtype='step')  
+plt.legend();  
+```
+
+```{python}
+sites = [(0,i) for i in range(1,8)]+ [(8,i) for i in range(1,8)]+ [(i,0) for i in range(1,8)]+ [(i,8) for i in range(1,8)]
+```
+
+```{python}
+sites = np.array(sites)
+```
+
+```{python}
+borders=[]
+for i in range(5):
+  borders.append(data[i][:,sites[:,0], sites[:,1]])
+```
+
+```{python}
+data[4][0][:9,:9]
+```
+
+```{python}
+borders[4][0]
+```
+
+```{python}
+for i,L in enumerate([16,32,64,72,128]):
+  print(np.abs(borders[i].mean(1)).mean())
+```
+
+```{python}
+np.abs(data[4].mean(axis=(1,2))).mean()
+```
+
+```{python}
+np.abs(borders[4].mean(1)).mean()
+```
+
+```{python}
+np.abs(borders[4].mean(1)).std()/np.sqrt(borders[4].shape[0])
+```
+
+```{python}
+
+```
+
+```{python}
+def to_int(digits, base=2):
+  sum = 0
+  for d in digits:
+    sum=2*sum+d
+
+  return sum    
+```
+
+```{python}
+a64 = np.apply_along_axis(to_int, 1, (borders64+1)//2)
+```
+
+```{python}
+a32 = np.apply_along_axis(to_int, 1, (borders32+1)//2)
+```
+
+```{python}
+a16 = np.apply_along_axis(to_int, 1, (borders16+1)//2)
+```
+
+```{python}
+fig, ax = plt.subplots(figsize=(20,6))
+ax.hist(a64, bins=200, histtype='step', density=True, label='64');
+ax.hist(a32, bins=200, histtype='step', density=True, label='32');
+ax.hist(a16, bins=200, histtype='step', density=True, label='16');
+ax.legend();
+```
+
+```{python}
+borders32.shape
+```
+
+```{python}
+cfg_16=np.fromfile('cfg_16x16.bin',dtype=np.int8).reshape(-1,16,16)
+```
+
+```{python}
+mag = cfg_16.sum(axis=(1,2))
+```
+
+```{python}
+cfg_16.shape
+```
+
+```{python}
+plt.plot(mag[0:1000]);
+```
+
+```{python}
+tau, ac = ac_and_tau_int(mag)
+```
+
+```{python}
+tau
+```
+
+```{python}
+plt.plot(ac);
+```
+
+```{python}
+np.abs(mag).mean()
+```
+
+```{python}
+np.abs(mag).std()*np.sqrt(tau/len(mag))
+```
+
+```{python}
+bootstrap(np.abs(mag),n_samples=100,binsize=100)
+```
+
+```{python}
+cfg_16_w=np.fromfile('cfg_16x16_b44069_wolff.bin',dtype=np.int8).reshape(-1,16,16)
+```
+
+```{python}
+cfg_16_w.shape
+```
+
+```{python}
+mag_w=cfg_16_w.sum(axis=(1,2))
+```
+
+```{python}
+plt.plot(mag_w[:1000]);
+```
+
+```{python}
+tau_w, ac_w = ac_and_tau_int(mag_w)
+tau_w
+```
+
+```{python}
+plt.plot(ac_w);
+```
+
+```{python}
+np.abs(mag_w).mean()
+```
+
+```{python}
+np.abs(mag_w).std()/np.sqrt(len(mag_w))
+```
+
+```{python}
+np.abs(mag_w).std()
+```
+
+```{python}
+
+```
