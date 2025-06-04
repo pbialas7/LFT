@@ -10,27 +10,27 @@
 
 #include "Lattice.h"
 
-template<typename F, typename L=Lattice<>>
+template<typename F, typename L=Lattice<> >
 class Field {
-
 public:
     using field_t = F;
     using lattice_t = L;
     static const int DIM = lattice_t::DIM;
+
 private:
     static std::size_t n_elem(std::array<int, DIM> dims) {
         return dims[0] * dims[1];
     }
 
 public:
-
-
     const size_t n_elements;
     const lattice_t lat;
 
-    Field(const lattice_t &lat) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements) {}
+    Field(const lattice_t &lat) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements) {
+    }
 
-    Field(const lattice_t &lat, field_t val) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements, val) {}
+    Field(const lattice_t &lat, field_t val) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements, val) {
+    }
 
     field_t &operator[](size_t i) { return field_[i]; }
 
@@ -69,6 +69,10 @@ public:
         return field_.data();
     }
 
+    void fill(field_t val) {
+        std::fill(field_.begin(), field_.end(), val);
+    }
+
 private:
     std::vector<field_t> field_;
 };
@@ -85,6 +89,3 @@ template<typename Float, typename F>
 Float mean(const F &field) {
     return sum<Float, F>(field) / field.n_elements;
 }
-
-
-

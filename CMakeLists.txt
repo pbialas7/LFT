@@ -40,10 +40,20 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(lyra)
 
+FetchContent_Declare(
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        GIT_TAG master
+        GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(glm)
+
+
 add_subdirectory(src/LFT)
 add_subdirectory(tests)
 
-add_executable(ising src/Drivers/ising.cpp src/LFT/Ising/correlation_function.h)
+add_executable(ising src/Drivers/ising.cpp src/LFT/Ising/correlation_function.h
+        src/LFT/Ising/Wolff.h)
 
 target_link_libraries(ising PRIVATE lft lyra spdlog::spdlog)
 #set_target_properties(ising PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
