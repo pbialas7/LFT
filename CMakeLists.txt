@@ -59,6 +59,9 @@ add_executable(ising src/Drivers/ising.cpp src/LFT/Ising/correlation_function.h
 
 target_link_libraries(ising PRIVATE lft lyra spdlog::spdlog)
 target_include_directories(ising PRIVATE src)
+target_compile_options(ising PRIVATE
+        $<$<CONFIG:Release>:-O3 -DNDEBUG>
+)
 
 #set_target_properties(ising PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 

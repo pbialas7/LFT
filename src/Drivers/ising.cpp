@@ -25,9 +25,11 @@ int main(int argc, char *argv[]) {
     std::string name;
     std::string data_dir{"."};
     int meas_freq = 10;
+    int corr_freq = 10;
     int save_freq = 0;
     bool wolff = false;
     int n_clusters = 16;
+    int tune_wolff = 0;
 
     std::mt19937_64::result_type seed = std::mt19937_64::default_seed;
 
@@ -41,10 +43,13 @@ int main(int argc, char *argv[]) {
                | lyra::opt(n_term, "n term ")["-t"]["--n-term"]("number of termalisation sweeps")
                | lyra::opt(cold_start)["-c"]["--cold-start"]("cold start")
                | lyra::opt(wolff)["-w"]["--wolff"]("use Wolff algorithm")
+
                | lyra::opt(seed, "seed")["--seed"]("seed")
                | lyra::opt(name, "name")["--name"]("name")
                | lyra::opt(data_dir, "data_dir")["--data-dir"]("data directory")
-               | lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measurment frquency")
+               | lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measurment frequency")
+               | lyra::opt(corr_freq, "correlation measure frequency")["--corr-freq"]("correlation measure frequency")
+               | lyra::opt(tune_wolff, "tune steps")["--tune-wolff"]("number of tuning steps for wolf algorithm")
                | lyra::opt(save_freq, "save frequency")["--save-freq"]("configuration save frequency");
 
 
@@ -75,15 +80,33 @@ int main(int argc, char *argv[]) {
     Wolff<ising::IsingField<lattice_t>, std::mt19937_64> wolff_update(ising, beta, rng);
 
     // ReSharper disable once CppDFAConstantConditions
+    double c = 0.0;
     for (std::size_t i = 0; i < n_term; i++) {
         // ReSharper disable once CppDFAUnreachableCode
         if (wolff) {
-            auto c = wolff_update.sweep(n_clusters);
+            c += wolff_update.sweep(n_clusters);
         } else {
             auto c = sweep(ising, update);
         }
     }
 
+    if (n_term > 0)
+        std::cout << c / n_term << " after " << n_term << "\n";
+
+    c = 0.0;
+
+    // ReSharper disable once CppDFAUnreachableCode
+    if (wolff && tune_wolff > 0) {
+        // ReSharper disable once CppDFAUnreachableCode
+        for (std::size_t i = 0; i < tune_wolff; i++) {
+            c += wolff_update.sweep(n_clusters);
+        }
+
+        c /= tune_wolff;
+        n_clusters = int(ceil(Lx * Ly / c));
+
+        std::cerr << "tuning " << c << " after " << tune_wolff << " n clusters " << n_clusters << "\n";
+    }
 
     auto em_path = make_file_path(data_dir, "em", name, "txt");
     auto corr_path = make_file_path(data_dir, "cor", name, "bin");
@@ -97,22 +120,29 @@ int main(int argc, char *argv[]) {
         cfg_path, std::fstream::binary | std::fstream::out | std::fstream::trunc
     };
     std::vector<double> cor_function(Lx, 0.0);
-    double c = 0.0;
+
     // ReSharper disable once CppDFAConstantConditions
+    c = 0.0;
     for (std::size_t i = 0; i < n_sweeps; i++) {
         // ReSharper disable once CppDFAUnreachableCode
 
+        double c_size = 0.0;
         if (wolff) {
-            c += wolff_update.sweep(n_clusters);
+            c_size += wolff_update.sweep(n_clusters);
+            c += c_size;
         } else
             sweep(ising, update);
 
         if ((meas_freq > 0) && (i + 1) % meas_freq == 0) {
-            energy_mag << ising::energy<double>(ising) << " " << ising::magnetisation<double>(ising) << std::endl;
+            energy_mag << ising::energy<double>(ising) << " " << ising::magnetisation<double>(ising)
+                    << " " << c_size << std::endl;
+        }
+        if ((corr_freq > 0) && (i + 1) % corr_freq == 0) {
             std::fill_n(cor_function.begin(), Lx, 0.0);
             correlation<double>(ising, cor_function);
             correlations.write(reinterpret_cast<char *>(cor_function.data()), cor_function.size() * sizeof(double));
         }
+
 
         if ((save_freq > 0) && (i + 1) % save_freq == 0) {
             configurations.write(reinterpret_cast<const char *>(ising.data()),
@@ -120,6 +150,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::cout << c / n_sweeps << "\n";
+    if (n_sweeps > 0)
+        std::cout << c / n_sweeps << "\n";
+
     return 0;
 }

@@ -57,7 +57,7 @@ public:
             auto site = s(rng_);
             flipped += fill_and_flip(site);
         }
-        return flipped / n;
+        return double(flipped) / n;
     }
 
 private:

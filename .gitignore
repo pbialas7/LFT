@@ -18,10 +18,11 @@ build/
 *.out
 
 em3d_*.txt
-em_beta*.txt
+em_*.txt
 am_*.txt
 cfg_*
-
+cor_*
+mag_*
 meas.txt
 /phi4_data/**
 /data2/**

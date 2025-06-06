@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.16.4
+      jupytext_version: 1.16.7
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -16,6 +16,10 @@ jupyter:
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+```
+
+```{python}
+round(5.7,0)
 ```
 
 ```{python}
