@@ -9,7 +9,6 @@
 #include <vector>
 #include <cstdint>
 #include <cassert>
-#include <iostream>
 
 
 template<typename I=uint32_t, int D = 2>
@@ -54,7 +53,6 @@ public:
     const std::array<index_t, DIM> dims;
 
 private:
-
     void set_volume() {
         volumes_[0] = 1;
         for (auto i = 1; i < DIM + 1; ++i) {
@@ -63,6 +61,7 @@ private:
     }
 
     std::array<index_t, DIM> coords_;
+
 public:
     std::array<index_t, DIM + 1> volumes_;
 };
@@ -73,8 +72,8 @@ public:
     static const int DIM = D;
     using dim_t = std::array<int, DIM>;
     using size_t = I;
-private:
 
+private:
     static std::size_t n_elem(dim_t dims) {
         std::size_t n = dims[0];
         for (int i = 1; i < DIM; i++)
@@ -83,8 +82,8 @@ private:
     }
 
 public:
-    Lattice(std::array<int, DIM> dims) : dims(dims), n_elements(n_elem(dims)), up_(DIM * n_elements),
-                                         dn_(DIM * n_elements) {
+    Lattice(std::array<int, DIM> dims) : dims(dims), n_elements(n_elem(dims)),
+                                         nn_(2 * DIM * n_elements) {
         MultiIndex<int, DIM> m_index(dims);
         for (auto i = 0; i < m_index.volume(); i++, ++m_index) {
             auto idx_ = i;
@@ -106,7 +105,8 @@ public:
                 auto u_coords_ = coords;
                 u_coords_[j] = u_;
 
-                up_[idx_ * DIM + j] = idx(u_coords_);
+
+                nn_[2 * idx_ * DIM + 2 + j] = idx(u_coords_);
             }
 
             for (auto j = 0; j < DIM; j++) {
@@ -115,10 +115,10 @@ public:
                     d_ += dims[j];
                 auto d_coords_ = coords;
                 d_coords_[j] = d_;
-                dn_[idx_ * DIM + j] = idx(d_coords_);
+
+                nn_[2 * idx_ * DIM + j] = idx(d_coords_);
             }
         }
-
     }
 
 
@@ -130,9 +130,13 @@ public:
         return idx;
     }
 
-    size_t up(size_t i, int dim) const { return up_[DIM * i + dim]; }
 
-    size_t dn(size_t i, int dim) const { return dn_[DIM * i + dim]; }
+    size_t nn(size_t i, int dir, int dim) const { return nn_[2 * DIM * i + (1 + dir) + dim]; }
+    size_t nn(size_t i, int dir) const { return nn_[2 * DIM * i + dir]; }
+
+    size_t up(size_t i, int dim) const { return nn(i, 1, dim); }
+    size_t dn(size_t i, int dim) const { return nn(i, -1, dim); }
+
 
     size_t even(size_t i) const { return even_[i]; }
 
@@ -142,9 +146,7 @@ public:
     const size_t n_elements;
 
 private:
-
-    std::vector<size_t> up_;
-    std::vector<size_t> dn_;
+    std::vector<size_t> nn_;
 
     std::vector<size_t> even_;
     std::vector<size_t> odd_;

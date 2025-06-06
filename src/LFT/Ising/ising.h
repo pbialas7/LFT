@@ -28,7 +28,7 @@ namespace ising {
 
             auto corona = field.corona(site);
             double p_up = std::exp(beta_ * corona) / (std::exp(beta_ * corona) + std::exp(-beta_ * corona));
-            //spdlog::debug("beta {} site {} corona {} p_up {}", beta_, site, corona, p_up);
+
             auto r = u(rng_);
             if (r < p_up)
                 field[site] = 1;

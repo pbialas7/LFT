@@ -36,17 +36,8 @@ public:
             auto site = stack.back();
             stack.pop_back();
 
-            for (auto mu = 0; mu < lattice_t::DIM; ++mu) {
-                auto n_ = lat.up(site, mu);
-                if (field_[n_] == dir) {
-                    if (u(rng_) < p) {
-                        cluster_size++;
-                        stack.push_back(n_);
-                        field_[n_] *= -1;
-                    }
-                }
-
-                n_ = lat.dn(site, mu);
+            for (auto mu = 0; mu < 2 * lattice_t::DIM; ++mu) {
+                auto n_ = lat.nn(site, mu);
                 if (field_[n_] == dir) {
                     if (u(rng_) < p) {
                         cluster_size++;
@@ -56,7 +47,6 @@ public:
                 }
             }
         }
-
 
         return cluster_size;
     }

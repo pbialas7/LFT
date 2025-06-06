@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     auto results = cli.parse({argc, argv});
     if (!results) {
         std::cerr << "Error in command line: " << results.message() << std::endl;
-        return (1);
+        return 1;
     }
     std::mt19937_64 rng(seed);
     spdlog::default_logger()->set_level(spdlog::level::warn);
