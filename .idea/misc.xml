@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Black">
-    <option name="sdkName" value="nmcmc (2)" />
+    <option name="sdkName" value="nmcmc-code-priv" />
   </component>
   <component name="CMakePythonSetting">
     <option name="pythonIntegrationState" value="YES" />
@@ -13,4 +13,5 @@
       <file path="$PROJECT_DIR$/cmake-build-release" />
     </excludeRoots>
   </component>
+  <component name="WestSettings"><![CDATA[{}]]></component>
 </project>
