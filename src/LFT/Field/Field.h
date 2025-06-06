@@ -6,7 +6,7 @@
 
 #include <array>
 #include <vector>
-#include <algorithm>
+
 
 #include "Lattice.h"
 
@@ -17,16 +17,10 @@ public:
     using lattice_t = L;
     static const int DIM = lattice_t::DIM;
 
-private:
-    static std::size_t n_elem(std::array<int, DIM> dims) {
-        return dims[0] * dims[1];
-    }
-
-public:
     const size_t n_elements;
     const lattice_t lat;
 
-    Field(const lattice_t &lat) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements) {
+    explicit Field(const lattice_t &lat) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements) {
     }
 
     Field(const lattice_t &lat, field_t val) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements, val) {

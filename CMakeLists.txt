@@ -53,9 +53,13 @@ add_subdirectory(src/LFT)
 add_subdirectory(tests)
 
 add_executable(ising src/Drivers/ising.cpp src/LFT/Ising/correlation_function.h
-        src/LFT/Ising/Wolff.h)
+        src/LFT/Ising/Wolff.h
+        src/utils/fs.h
+        src/utils/fs.cpp)
 
 target_link_libraries(ising PRIVATE lft lyra spdlog::spdlog)
+target_include_directories(ising PRIVATE src)
+
 #set_target_properties(ising PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 add_executable(ising1d src/Drivers/ising1d.cpp)

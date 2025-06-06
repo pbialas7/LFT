@@ -5,6 +5,8 @@
 #include <random>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #include "lyra/lyra.hpp"
 #include "spdlog/spdlog.h"
@@ -13,13 +15,15 @@
 #include "Ising/correlation_function.h"
 #include "MonteCarlo/sweep.h"
 #include "Ising/Wolff.h"
+#include "utils/fs.h"
 
 int main(int argc, char *argv[]) {
     int Lx = 0, Ly = 0;
     std::size_t n_sweeps = 0, n_term = 0;
     bool cold_start = false;
     double beta = 0.0;
-    std::string name = "";
+    std::string name;
+    std::string data_dir{"."};
     int meas_freq = 10;
     int save_freq = 0;
     bool wolff = false;
@@ -39,6 +43,7 @@ int main(int argc, char *argv[]) {
                | lyra::opt(wolff)["-w"]["--wolff"]("use Wolff algorithm")
                | lyra::opt(seed, "seed")["--seed"]("seed")
                | lyra::opt(name, "name")["--name"]("name")
+               | lyra::opt(data_dir, "data_dir")["--data-dir"]("data directory")
                | lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measurment frquency")
                | lyra::opt(save_freq, "save frequency")["--save-freq"]("configuration save frequency");
 
@@ -53,37 +58,47 @@ int main(int argc, char *argv[]) {
 
     spdlog::debug("Lx {} Ly {} beta {} n-sweeps {} seed {} cold-start {}", Lx, Ly, beta, n_sweeps, seed, cold_start);
 
+    fs::path data_path{data_dir};
+    if (!fs::exists(data_path)) {
+        std::cerr << "Data directory does `" << data_path << "' not exist, creating." << std::endl;
+        fs::create_directories(data_path);
+    }
 
     using lattice_t = Lattice<uint32_t>;
     lattice_t lat({Lx, Ly});
     ising::IsingField<lattice_t> ising(lat, 1);
+    // ReSharper disable once CppDFAConstantConditions
     if (!cold_start)
         ising::hot_start(ising, rng);
 
     ising::HeathBath<lattice_t> update(beta, rng);
     Wolff<ising::IsingField<lattice_t>, std::mt19937_64> wolff_update(ising, beta, rng);
 
+    // ReSharper disable once CppDFAConstantConditions
     for (std::size_t i = 0; i < n_term; i++) {
         // ReSharper disable once CppDFAUnreachableCode
         if (wolff) {
             auto c = wolff_update.sweep(n_clusters);
-            //std::cout << c << "\n";
         } else {
             auto c = sweep(ising, update);
         }
     }
 
-    std::fstream energy_mag{std::string("em_") + name + ".txt", energy_mag.out | energy_mag.trunc};
+
+    auto em_path = make_file_path(data_dir, "em", name, "txt");
+    auto corr_path = make_file_path(data_dir, "cor", name, "bin");
+    auto cfg_path = make_file_path(data_dir, "cfg", name, "bin");
+
+    std::fstream energy_mag{em_path, std::fstream::out | std::fstream::trunc};
     std::fstream correlations{
-        std::string("cor_") + name + ".bin",
-        correlations.binary | correlations.out | correlations.trunc
+        corr_path, std::fstream::binary | std::fstream::out | std::fstream::trunc
     };
     std::fstream configurations{
-        std::string("cfg_") + name + ".bin",
-        configurations.binary | configurations.out | configurations.trunc
+        cfg_path, std::fstream::binary | std::fstream::out | std::fstream::trunc
     };
     std::vector<double> cor_function(Lx, 0.0);
     double c = 0.0;
+    // ReSharper disable once CppDFAConstantConditions
     for (std::size_t i = 0; i < n_sweeps; i++) {
         // ReSharper disable once CppDFAUnreachableCode
 
