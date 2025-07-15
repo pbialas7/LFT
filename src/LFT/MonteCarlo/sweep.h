@@ -2,6 +2,8 @@
 // Created by pbialas on 20.01.2022.
 //
 #pragma once
+#include <algorithm>
+#include <vector>
 
 template<typename F, typename U>
 typename F::lattice_t::size_t sweep(F &field, U update) {
