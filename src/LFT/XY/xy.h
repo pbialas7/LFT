@@ -132,16 +132,15 @@ namespace xy {
     auto magnetisation(const F &field) {
         R mag_x = 0.0;
         R mag_y = 0.0;
-        R mag2_x = 0.0;
-        R mag2_y = 0.0;
         for (typename F::lattice_t::size_t site = 0; site < field.lat.n_elements; ++site) {
+
             auto c = std::cos(field[site]);
             auto s = std::sin(field[site]);
             mag_x += c;
             mag_y += s;
-            mag2_x += c * c;
-            mag2_y += s * s;
         }
+        auto mag2_x = mag_x * mag_x;
+        auto mag2_y = mag_y * mag_y;
         return std::make_tuple(mag_x, mag_y, mag2_x + mag2_y);
     }
 
