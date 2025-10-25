@@ -83,3 +83,4 @@ template<typename Float, typename F>
 Float mean(const F &field) {
     return sum<Float, F>(field) / field.n_elements;
 }
+

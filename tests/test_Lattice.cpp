@@ -13,6 +13,7 @@ TEST_CASE("Latttice constructors indexing 1D", "[Constructors] [Lattice][1D]{ind
     REQUIRE(lattice.n_elements == 8);
 
     for(int i=0;i<Lx;i++) {
+        INFO("i = " <<i);
         REQUIRE(int(lattice.up(i,0))==(i+1)%Lx);
         REQUIRE(int(lattice.dn(i,0))==(i-1+Lx)%Lx);
     }

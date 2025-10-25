@@ -8,7 +8,7 @@
 #include <array>
 #include <vector>
 #include <cstdint>
-#include <cassert>
+#include <spdlog/spdlog.h>
 
 
 template<typename I=uint32_t, int D = 2>
@@ -106,7 +106,7 @@ public:
                 u_coords_[j] = u_;
 
 
-                nn_[2 * idx_ * DIM + 2 + j] = idx(u_coords_);
+                nn_[2 * idx_ * DIM + DIM + j] = idx(u_coords_);
             }
 
             for (auto j = 0; j < DIM; j++) {
@@ -119,6 +119,9 @@ public:
                 nn_[2 * idx_ * DIM + j] = idx(d_coords_);
             }
         }
+
+        spdlog::info("Lattice");
+        spdlog::info("{}", (void *)odd_.data());
     }
 
 
@@ -131,8 +134,8 @@ public:
     }
 
 
-    size_t nn(size_t i, int dir, int dim) const { return nn_[2 * DIM * i + (1 + dir) + dim]; }
-    size_t nn(size_t i, int dir) const { return nn_[2 * DIM * i + dir]; }
+    size_t nn(size_t i, int dir, int dim) const { return nn_[2 * DIM * i + (dir+1)/2*DIM + dim]; }
+    //size_t nn(size_t i, int dir) const { return nn_[2 * DIM * i + dir]; }
 
     size_t up(size_t i, int dim) const { return nn(i, 1, dim); }
     size_t dn(size_t i, int dim) const { return nn(i, -1, dim); }
