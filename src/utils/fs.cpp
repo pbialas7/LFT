@@ -10,3 +10,10 @@ fs::path make_file_path(const fs::path &data_dir, const std::string &prefix, con
     auto file_name = prefix + "_" + name + "."+extension;
     return data_dir / file_name;
 }
+
+std::fstream * otional_fstream_ptr(const fs::path &path, bool create, std::ios::openmode mode) {
+    if (create)
+        return new std::fstream(path, mode);
+
+    return nullptr;
+}

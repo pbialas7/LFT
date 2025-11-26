@@ -22,11 +22,11 @@ namespace ea {
 
     template<typename L, typename RNG=std::mt19937_64>
     struct HeathBath {
-        using size_t = typename L::size_t;
+        using size_t = L::size_t;
 
 
         using field_class = SpinField<L>;
-        using field_t = typename field_class::field_t;
+        using field_t = field_class::field_t;
         using rng_t = RNG;
 
 
@@ -60,4 +60,23 @@ namespace ea {
         JField<L> j_;
         JLattice<L> j_lat_;
     };
+
+    template<typename Float, typename F>
+    Float magnetisation(const F &f) {
+        return mean<Float>(f);
+    }
+
+    template<typename Float, typename F, typename JF>
+    Float energy(const F &field, const JF &j_) {
+        Float e = 0.0;
+        for (int i = 0; i < field.n_elements; ++i) {
+            double corona = 0.0;
+            for (auto d = 0; d < F::DIM; ++d) {
+                corona += field[field.lat.up(i, d)] * j_[i + j_.lat.volumes[F::DIM - 1] * d];
+            }
+            e += field[i] * corona;
+        }
+
+        return e / field.n_elements;
+    }
 }

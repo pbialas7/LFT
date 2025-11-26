@@ -68,7 +68,7 @@ public:
     }
 
     void write(std::ostream &out) const {
-        out.write((const char *) field_.data(), sizeof(field_t) * field_.n_elements);
+        out.write((const char *) field_.data(), sizeof(field_t) * n_elements);
     }
 
 
