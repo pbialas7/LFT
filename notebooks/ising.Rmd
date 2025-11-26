@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.14.5
+      jupytext_version: 1.16.1
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -101,8 +101,20 @@ kernel=geometric(11,0.1,0.55)*max_spin
 ```
 
 ```{python}
+max_spin
+```
+
+```{python}
+kernel
+```
+
+```{python}
 plt.grid()
 plt.bar(np.arange(-(hl:=len(kernel)//2),hl+1),kernel);
+```
+
+```{python}
+kernel.sum()
 ```
 
 ```{python}
