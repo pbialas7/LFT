@@ -49,7 +49,9 @@ add_executable(ising src/Drivers/ising.cpp src/LFT/Ising/correlation_function.h
         src/utils/fs.h
         src/utils/fs.cpp
         src/utils/extract.cpp
-        src/utils/extract.h)
+        src/utils/extract.h
+        src/Drivers/ising_base_options.cpp
+        src/Drivers/ising_base_options.h)
 
 target_link_libraries(ising PRIVATE lft lyra spdlog::spdlog)
 target_include_directories(ising PRIVATE src)
@@ -72,7 +74,9 @@ add_executable(xy src/Drivers/xy.cpp src/LFT/XY/xy.h)
 target_link_libraries(xy PRIVATE lft lyra spdlog::spdlog)
 
 add_executable(ea src/Drivers/ea.cpp
-        src/LFT/EdwardsAnderson/ea.h)
+        src/LFT/EdwardsAnderson/ea.h
+        src/Drivers/ising_base_options.cpp
+        src/Drivers/ising_base_options.h)
 target_link_libraries(ea PRIVATE lft lyra spdlog::spdlog)
 
 add_custom_target(all_targets DEPENDS ising ising1d ising3d phi4 xy)

@@ -120,9 +120,6 @@ public:
             }
         }
 
-        spdlog::info("Lattice");
-        spdlog::info("{}", (void *) odd_.data());
-
         set_volume();
     }
 
