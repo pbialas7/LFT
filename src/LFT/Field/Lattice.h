@@ -135,7 +135,7 @@ public:
 
 
     size_t nn(size_t i, int dir, int dim) const { return nn_[2 * DIM * i + (dir+1)/2*DIM + dim]; }
-    //size_t nn(size_t i, int dir) const { return nn_[2 * DIM * i + dir]; }
+    size_t nn(size_t i, int mu) const { return nn_[2 * DIM * i + mu]; }
 
     size_t up(size_t i, int dim) const { return nn(i, 1, dim); }
     size_t dn(size_t i, int dim) const { return nn(i, -1, dim); }
