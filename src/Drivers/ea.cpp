@@ -30,12 +30,18 @@ int main(int argc, char *argv[]) {
     spdlog::info("Lx {} Ly {}", base_options.Lx, base_options.Ly);
 
     std::mt19937_64 rng(base_options.seed);
+    std::bernoulli_distribution bern(0.5);
     using lattice_t = Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly});
     ea::SpinField<lattice_t> spin_field(lat, 1);
 
     Lattice<uint32_t, 3> j_lat({lat.dims[0], lat.dims[1], 2});
     ea::JField<lattice_t> j_field(j_lat, 1);
+    for (int i = 0; i < j_field.n_elements; ++i) {
+        if (!bern(rng)) {
+            j_field[i] = -1;
+        }
+    }
 
     auto j_path = make_file_path(base_options.data_dir, "j", base_options.name, "txt");
     std::fstream j_file(j_path, std::fstream::out);
@@ -60,7 +66,7 @@ int main(int argc, char *argv[]) {
         sweep(spin_field, update);
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             if (em_stream_ptr) {
-                *em_stream_ptr << "1";
+                *em_stream_ptr << ea::energy<double>(spin_field, j_field) << "\n";
             }
         }
 
