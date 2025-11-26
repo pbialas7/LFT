@@ -121,7 +121,9 @@ public:
         }
 
         spdlog::info("Lattice");
-        spdlog::info("{}", (void *)odd_.data());
+        spdlog::info("{}", (void *) odd_.data());
+
+        set_volume();
     }
 
 
@@ -134,8 +136,8 @@ public:
     }
 
 
-    size_t nn(size_t i, int dir, int dim) const { return nn_[2 * DIM * i + (dir+1)/2*DIM + dim]; }
-    //size_t nn(size_t i, int dir) const { return nn_[2 * DIM * i + dir]; }
+    size_t nn(size_t i, int dir, int dim) const { return nn_[2 * DIM * i + (dir + 1) / 2 * DIM + dim]; }
+    size_t nn(size_t i, int mu) const { return nn_[2 * DIM * i + mu]; }
 
     size_t up(size_t i, int dim) const { return nn(i, 1, dim); }
     size_t dn(size_t i, int dim) const { return nn(i, -1, dim); }
@@ -146,9 +148,17 @@ public:
     size_t odd(size_t i) const { return odd_[i]; }
 
     const dim_t dims;
+    std::array<int, DIM + 1> volumes;
     const size_t n_elements;
 
 private:
+    void set_volume() {
+        volumes[0] = 1;
+        for (auto i = 1; i < DIM + 1; ++i) {
+            volumes[i] = volumes[i - 1] * dims[i - 1];
+        }
+    }
+
     std::vector<size_t> nn_;
 
     std::vector<size_t> even_;
