@@ -66,6 +66,7 @@ public:
     std::array<index_t, DIM + 1> volumes_;
 };
 
+
 template<typename I=uint32_t, int D = 2>
 class Lattice {
 public:
