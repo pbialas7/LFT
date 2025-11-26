@@ -16,6 +16,7 @@ namespace fs = std::filesystem;
 #include "MonteCarlo/sweep.h"
 #include "Ising/Wolff.h"
 #include "utils/fs.h"
+#include "utils/extract.h"
 
 int main(int argc, char *argv[]) {
     int Lx = 0, Ly = 0;
@@ -76,8 +77,10 @@ int main(int argc, char *argv[]) {
     if (!cold_start)
         ising::hot_start(ising, rng);
 
+
+    // ReSharper disable once CppDFAUnusedValue
     ising::HeathBath<lattice_t> update(beta, rng);
-    Wolff<ising::IsingField<lattice_t>, std::mt19937_64> wolff_update(ising, beta, rng);
+    Wolff wolff_update(ising, beta, rng);
 
     // ReSharper disable once CppDFAConstantConditions
     double c = 0.0;
@@ -86,7 +89,7 @@ int main(int argc, char *argv[]) {
         if (wolff) {
             c += wolff_update.sweep(n_clusters);
         } else {
-            auto c = sweep(ising, update);
+            c+= sweep(ising, update);
         }
     }
 
@@ -111,6 +114,7 @@ int main(int argc, char *argv[]) {
     auto em_path = make_file_path(data_dir, "em", name, "txt");
     auto corr_path = make_file_path(data_dir, "cor", name, "bin");
     auto cfg_path = make_file_path(data_dir, "cfg", name, "bin");
+    auto edges_path = make_file_path(data_dir, "edges", name, "bin");
 
     std::fstream energy_mag{em_path, std::fstream::out | std::fstream::trunc};
     std::fstream correlations{
@@ -119,8 +123,13 @@ int main(int argc, char *argv[]) {
     std::fstream configurations{
         cfg_path, std::fstream::binary | std::fstream::out | std::fstream::trunc
     };
-    std::vector<double> cor_function(Lx, 0.0);
 
+    std::fstream edges_stream{
+        edges_path, std::fstream::binary | std::fstream::out | std::fstream::trunc
+    };
+
+    std::vector<double> cor_function(Lx, 0.0);
+    std::vector<decltype(ising)::field_t> edges(Lx + Ly - 1);
     // ReSharper disable once CppDFAConstantConditions
     c = 0.0;
     for (std::size_t i = 0; i < n_sweeps; i++) {
@@ -131,7 +140,7 @@ int main(int argc, char *argv[]) {
             c_size += wolff_update.sweep(n_clusters);
             c += c_size;
         } else
-            sweep(ising, update);
+            c+=sweep(ising, update);
 
         if ((meas_freq > 0) && (i + 1) % meas_freq == 0) {
             energy_mag << ising::energy<double>(ising) << " " << ising::magnetisation<double>(ising)
@@ -147,6 +156,9 @@ int main(int argc, char *argv[]) {
         if ((save_freq > 0) && (i + 1) % save_freq == 0) {
             configurations.write(reinterpret_cast<const char *>(ising.data()),
                                  ising.n_elements * sizeof(ising::IsingField<lattice_t>::field_t));
+            extract_edges(ising, edges);
+            edges_stream.write(reinterpret_cast<const char *>(edges.data()),
+                edges.size() * sizeof(decltype(ising)::field_t));
         }
     }
 
