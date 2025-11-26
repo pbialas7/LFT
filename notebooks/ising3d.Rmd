@@ -19,13 +19,19 @@ import matplotlib.pyplot as plt
 ```
 
 ```{python}
-name = 'em3d_08x08x08_beta0300_hot.txt'
+name = 'em3d_08x08x08_beta0264.txt'
 ```
 
 ```{python}
 em = np.loadtxt('../'+name).astype('int64')
 M=em[:,1]
 E = em[:,0]
+L = 4
+beta = 0.264
+```
+
+```{python}
+M.shape
 ```
 
 ```{python}
