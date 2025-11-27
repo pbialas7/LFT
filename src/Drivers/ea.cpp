@@ -18,8 +18,10 @@ int main(int argc, char *argv[]) {
     IsingBaseOptions base_options;
 
     int meas_freq = 0;
+    bool ising = false;
 
     base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("configuration save frequency");
+    base_options.cli |= lyra::opt(ising)["--ising"]("--ising");
 
     auto results = base_options.cli.parse({argc, argv});
     if (!results) {
@@ -37,9 +39,11 @@ int main(int argc, char *argv[]) {
 
     Lattice<uint32_t, 3> j_lat({lat.dims[0], lat.dims[1], 2});
     ea::JField<lattice_t> j_field(j_lat, 1);
-    for (int i = 0; i < j_field.n_elements; ++i) {
-        if (!bern(rng)) {
-            j_field[i] = -1;
+    if (!ising) {
+        for (int i = 0; i < j_field.n_elements; ++i) {
+            if (!bern(rng)) {
+                j_field[i] = -1;
+            }
         }
     }
 
@@ -66,7 +70,8 @@ int main(int argc, char *argv[]) {
         sweep(spin_field, update);
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             if (em_stream_ptr) {
-                *em_stream_ptr << ea::energy<double>(spin_field, j_field) << "\n";
+                *em_stream_ptr << ea::energy<double>(spin_field, j_field) << " ";
+                *em_stream_ptr << ea::magnetisation<double>(spin_field) << "\n";
             }
         }
 

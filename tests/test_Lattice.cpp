@@ -9,15 +9,14 @@
 TEST_CASE("Latttice constructors indexing 1D", "[Constructors] [Lattice][1D]{indexing") {
     const int Lx = 8;
 
-    Lattice<int8_t,1> lattice({Lx});
+    Lattice<int8_t, 1> lattice({Lx});
     REQUIRE(lattice.n_elements == 8);
 
-    for(int i=0;i<Lx;i++) {
+    for (int i = 0; i < Lx; i++) {
         INFO("i = " <<i);
         REQUIRE(int(lattice.up(i,0))==(i+1)%Lx);
         REQUIRE(int(lattice.dn(i,0))==(i-1+Lx)%Lx);
     }
-
 }
 
 TEST_CASE("Latttice constructors", "[Constructors] [Lattice]") {
@@ -26,7 +25,6 @@ TEST_CASE("Latttice constructors", "[Constructors] [Lattice]") {
 
     Lattice<int8_t> lattice({Lx, Ly});
     REQUIRE(lattice.n_elements == 64);
-
 }
 
 TEST_CASE("Lattice indexing", "[Lattice][Indexing]") {
@@ -75,8 +73,29 @@ TEST_CASE("Latttice up dn", "[Constructors][Lattice]") {
         REQUIRE(lattice.dn(2, 1) == 0);
         REQUIRE(lattice.dn(3, 0) == 2);
         REQUIRE(lattice.dn(3, 1) == 1);
-
     }
+}
+
+TEST_CASE("Latttice up dn 4x4", "[Constructors][Lattice]") {
+    const int Lx = 4;
+    const int Ly = 4;
+
+    Lattice<int8_t> lattice({Lx, Ly});
+    REQUIRE(lattice.n_elements == 16);
+
+    // [12 13 14 15]
+    // [ 8  9 10 11]
+    // [ 4  5  6  7]
+    // [ 0  1  2  3]
+
+    REQUIRE(lattice.up(0, 0) == 1);
+    REQUIRE(lattice.up(0, 1) == 4);
+
+    REQUIRE(lattice.up(7, 0) == 4);
+    REQUIRE(lattice.up(7, 1) == 11);
+
+    REQUIRE(lattice.dn(12, 0) == 15);
+    REQUIRE(lattice.up(12, 1) == 0);
 }
 
 TEST_CASE("Lattice even/odd", "[Lattice][Even/Odd]") {
@@ -108,5 +127,4 @@ TEST_CASE("Lattice even/odd", "[Lattice][Even/Odd]") {
     REQUIRE(lattice.odd(5) == 11);
     REQUIRE(lattice.odd(6) == 12);
     REQUIRE(lattice.odd(7) == 14);
-
 }

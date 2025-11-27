@@ -36,12 +36,12 @@ namespace ea {
         size_t operator()(field_class &field, size_t i) {
             double corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
-                corona += field[field.lat.up(i, d)] * j_[i + j_lat_.volumes[L::DIM - 1] * d];
+                corona += field[field.lat.up(i, d)] * j_[i + j_lat_.volumes[L::DIM] * d];
             }
 
             for (auto d = 0; d < L::DIM; ++d) {
                 auto dn_site = field.lat.dn(i, d);
-                corona += field[dn_site] * j_[dn_site + j_lat_.volumes[L::DIM - 1] * d];
+                corona += field[dn_site] * j_[dn_site + j_lat_.volumes[L::DIM] * d];
             }
             double p_up = std::exp(beta_ * corona) / (std::exp(beta_ * corona) + std::exp(-beta_ * corona));
 
@@ -72,11 +72,14 @@ namespace ea {
         for (int i = 0; i < field.n_elements; ++i) {
             double corona = 0.0;
             for (auto d = 0; d < F::DIM; ++d) {
-                corona += field[field.lat.up(i, d)] * j_[i + j_.lat.volumes[F::DIM - 1] * d];
+                auto i_up = field.lat.up(i, d);
+                auto j_up = j_[i + j_.lat.volumes[F::DIM] * d];
+                auto s_up = field[i_up];
+                corona += s_up * j_up;
             }
             e += field[i] * corona;
         }
 
-        return e / field.n_elements;
+        return -e;
     }
 }

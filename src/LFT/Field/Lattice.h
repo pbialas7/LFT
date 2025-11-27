@@ -86,6 +86,7 @@ public:
     Lattice(std::array<int, DIM> dims) : dims(dims), n_elements(n_elem(dims)),
                                          nn_(2 * DIM * n_elements) {
         MultiIndex<int, DIM> m_index(dims);
+
         for (auto i = 0; i < m_index.volume(); i++, ++m_index) {
             auto idx_ = i;
             auto coords = m_index.coords();
