@@ -19,9 +19,12 @@ int main(int argc, char *argv[]) {
 
     int meas_freq = 0;
     bool ising = false;
+    bool binary = false;
+
 
     base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("configuration save frequency");
-    base_options.cli |= lyra::opt(ising)["--ising"]("--ising");
+    base_options.cli |= lyra::opt(ising)["--ising"]("Set J = 1");
+    base_options.cli |= lyra::opt(binary)["--binary"]("Sets J =+/-1");
 
     auto results = base_options.cli.parse({argc, argv});
     if (!results) {
@@ -33,6 +36,7 @@ int main(int argc, char *argv[]) {
 
     std::mt19937_64 rng(base_options.seed);
     std::bernoulli_distribution bern(0.5);
+    std::normal_distribution<double> normal(0.0, 1.0);
     using lattice_t = Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly});
     ea::SpinField<lattice_t> spin_field(lat, 1);
@@ -40,9 +44,15 @@ int main(int argc, char *argv[]) {
     Lattice<uint32_t, 3> j_lat({lat.dims[0], lat.dims[1], 2});
     ea::JField<lattice_t> j_field(j_lat, 1);
     if (!ising) {
-        for (int i = 0; i < j_field.n_elements; ++i) {
-            if (!bern(rng)) {
-                j_field[i] = -1;
+        if (binary) {
+            for (int i = 0; i < j_field.n_elements; ++i) {
+                if (!bern(rng)) {
+                    j_field[i] = -1;
+                }
+            }
+        } else {
+            for (int i = 0; i < j_field.n_elements; ++i) {
+                j_field[i] = normal(rng);
             }
         }
     }
