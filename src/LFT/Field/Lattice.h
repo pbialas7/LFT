@@ -8,7 +8,7 @@
 #include <array>
 #include <vector>
 #include <cstdint>
-#include <cassert>
+#include <spdlog/spdlog.h>
 
 
 template<typename I=uint32_t, int D = 2>
@@ -66,6 +66,7 @@ public:
     std::array<index_t, DIM + 1> volumes_;
 };
 
+
 template<typename I=uint32_t, int D = 2>
 class Lattice {
 public:
@@ -85,6 +86,7 @@ public:
     Lattice(std::array<int, DIM> dims) : dims(dims), n_elements(n_elem(dims)),
                                          nn_(2 * DIM * n_elements) {
         MultiIndex<int, DIM> m_index(dims);
+
         for (auto i = 0; i < m_index.volume(); i++, ++m_index) {
             auto idx_ = i;
             auto coords = m_index.coords();
@@ -106,7 +108,7 @@ public:
                 u_coords_[j] = u_;
 
 
-                nn_[2 * idx_ * DIM + 2 + j] = idx(u_coords_);
+                nn_[2 * idx_ * DIM + DIM + j] = idx(u_coords_);
             }
 
             for (auto j = 0; j < DIM; j++) {
@@ -119,6 +121,8 @@ public:
                 nn_[2 * idx_ * DIM + j] = idx(d_coords_);
             }
         }
+
+        set_volume();
     }
 
 
@@ -131,8 +135,8 @@ public:
     }
 
 
-    size_t nn(size_t i, int dir, int dim) const { return nn_[2 * DIM * i + (1 + dir) + dim]; }
-    size_t nn(size_t i, int dir) const { return nn_[2 * DIM * i + dir]; }
+    size_t nn(size_t i, int dir, int dim) const { return nn_[2 * DIM * i + (dir + 1) / 2 * DIM + dim]; }
+    size_t nn(size_t i, int mu) const { return nn_[2 * DIM * i + mu]; }
 
     size_t up(size_t i, int dim) const { return nn(i, 1, dim); }
     size_t dn(size_t i, int dim) const { return nn(i, -1, dim); }
@@ -143,9 +147,17 @@ public:
     size_t odd(size_t i) const { return odd_[i]; }
 
     const dim_t dims;
+    std::array<int, DIM + 1> volumes;
     const size_t n_elements;
 
 private:
+    void set_volume() {
+        volumes[0] = 1;
+        for (auto i = 1; i < DIM + 1; ++i) {
+            volumes[i] = volumes[i - 1] * dims[i - 1];
+        }
+    }
+
     std::vector<size_t> nn_;
 
     std::vector<size_t> even_;

@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     int save_freq = 0;
     int meas_freq = 0;
     std::string out_file_name = "o.bin";
-    std::string meas_file_name = "meas.txt";
+    std::string meas_file_name = "xy_meas.txt";
     int n_hits = 4;
 
 
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
             auto [mag_x, mag_y, mag2] = xy::magnetisation(phi);
             auto [action, c] = xy::action(phi);
 
-            meas << action << " " << mag_x << " " << mag_y << " " << mag2 << "\n";
+            meas << action << " " << c << " " << mag_x << " " << mag_y << " " << mag2 << "\n";
         }
 
         if (save_freq > 0 && ((i + 1) % save_freq) == 0)

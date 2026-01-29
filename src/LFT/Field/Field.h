@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include <array>
-#include <vector>
 
+#include <vector>
+#include <ostream>
 
 #include "Lattice.h"
 
@@ -67,9 +67,22 @@ public:
         std::fill(field_.begin(), field_.end(), val);
     }
 
+    void write(std::ostream &out) const {
+        out.write((const char *) field_.data(), sizeof(field_t) * n_elements);
+    }
+
+
+    friend std::ostream &operator<<(std::ostream &out, const Field &field) {
+        for (auto d = 0; d < field.n_elements; ++d) {
+            out << field[d] << " ";
+        }
+        return out;
+    }
+
 private:
     std::vector<field_t> field_;
 };
+
 
 template<typename Res, typename F>
 Res sum(const F &field) {

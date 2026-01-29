@@ -30,7 +30,8 @@ int main(int argc, char *argv[]) {
     double lambda = 1.0;
     double eps = 0.5;
     int save_freq = 0;
-    std::string out_file_name = "o.bin";
+    int meas_freq = 0;
+    std::string out_file_name = "cfgs.bin";
     int n_hits = 4;
 
 
@@ -49,7 +50,8 @@ int main(int argc, char *argv[]) {
                lyra::opt(save_freq, "save freq")["--save-freq"]("configuration save frequency") |
                lyra::opt(seed, "seed")["--seed"]("") |
                lyra::opt(out_file_name, "output")["-o"]["--output"]("congigurations output file") |
-               lyra::opt(n_hits, "n hits")["--n-hits"]("Number of hits in multi-hit metropolis (=4)");
+               lyra::opt(n_hits, "n hits")["--n-hits"]("Number of hits in multi-hit metropolis (=4)") |
+               lyra::opt(meas_freq," measure freq")["--meas-freq"]("measurement frequency");
 
 
     auto results = cli.parse({argc, argv});
@@ -60,8 +62,10 @@ int main(int argc, char *argv[]) {
     std::mt19937_64 rng(seed);
     spdlog::default_logger()->set_level(spdlog::level::warn);
 
-    console->debug("Lx {} Ly {} M2 {} n-sweeps {} seed {} output {} cold-start {}", Lx, Ly, M2, n_sweeps, seed,
+    console->debug("Lx {} Ly {} M2 {} lambda {} n-sweeps {} seed {} output {} cold-start {}", Lx, Ly, M2, lambda,
+                   n_sweeps, seed,
                    out_file_name, cold_start);
+
 
 
     using lattice_t = Lattice<uint32_t>;

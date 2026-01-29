@@ -1,0 +1,103 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.16.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+```
+
+```{python}
+from neumc.utils.stats_utils import ac_and_tau_int, bootstrap
+```
+
+```{python}
+sizes = [16,32,64,128,256,512,1024]
+```
+
+```{python}
+data = {}
+for L in sizes:
+  path = Path(f'em_{L}x{L}_b44069_wolff.txt')
+  if path.exists():
+    cfg = np.loadtxt(path)
+    data[L]=cfg
+    print(L, cfg.shape)
+```
+
+```{python}
+em44=np.loadtxt('em_test.txt')
+em44.shape
+```
+
+```{python}
+np.abs(em44[:,1]).mean()
+```
+
+```{python}
+mag={}
+energy={}
+for L,d in data.items():
+  mag[L]=d[:,1]
+  energy[L]=d[:,0]
+```
+
+```{python}
+for L in sorted(mag.keys()):
+  print(L, np.abs(mag[L]).mean())
+```
+
+```{python}
+for L in sorted(mag.keys()):
+  plt.hist(mag[L],bins=100,density=True, histtype='step', label=f'L={L}');
+plt.legend();  
+```
+
+```{python}
+plt.hist(mag[1024],bins=100, density=True, histtype='step');
+plt.hist(em44[:,1],bins=100, density=True, histtype='step');
+```
+
+```{python}
+np.log(1+np.sqrt(2))/2
+```
+
+```{python}
+2/np.log(1+np.sqrt(2))
+```
+
+```{python}
+
+```
+
+```{python}
+for L in sorted(data.keys()):
+  plt.hist(data[L][:,0],bins=100,density=True, histtype='step', label=f'L={L}');
+plt.legend();  
+```
+
+```{python}
+for L in sorted(data.keys()):
+  e = data[L][:,0].mean()
+  susc = (np.mean(data[L][:,0]**2)-e**2)*L*L
+  print(f"{L:5d} {e:.4f} {susc:8.4f}")
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
