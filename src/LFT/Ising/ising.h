@@ -74,7 +74,7 @@ namespace ising {
         Float e = 0.0;
         for (int i = 0; i < f.n_elements; ++i)
             e += f.up_corona(i) * f[i];
-        return e / f.n_elements;
+        return -e / f.n_elements;
     }
 
 
@@ -83,7 +83,7 @@ namespace ising {
         int64_t e = 0;
         for (int i = 0; i < f.n_elements; ++i)
             e += f.up_corona(i) * f[i];
-        return e;
+        return -e;
     }
 
 
