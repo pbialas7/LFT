@@ -1,0 +1,161 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.18.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+# %load_ext autoreload
+# %autoreload 2
+```
+
+```{python}
+import numpy as np
+import scipy
+import matplotlib.pyplot as plt
+```
+
+```{python}
+from scipy.special import logsumexp
+```
+
+```{python}
+def rho(E,L):
+    e = int(np.round(E))
+    return 2*scipy.special.binom(L,(E+L)//2)
+
+def logbinom(n,m):
+    return scipy.special.loggamma(n+1) - scipy.special.loggamma(m+1) - scipy.special.loggamma(n-m+1)
+
+def logrho(E,L):
+    return np.log(2)+logbinom(L,(E+L)//2)
+
+def logZe(beta,L):
+    erange = np.arange(-L,L+2,4)
+    return scipy.special.logsumexp(logrho(erange,L)-beta*erange) 
+
+def logEhist(beta,L):
+    erange = np.arange(-L,L+2,4)
+    return erange, logrho(erange,L)-beta*erange - logZe(beta,L) 
+
+def logZ(beta, L):
+    t = np.tanh(beta)
+    return L*(np.log(2) + np.log(np.cosh(beta))) + np.log(1+t**L) 
+```
+
+```{python}
+x,y = logEhist(0.5,32)
+```
+
+```{python}
+plt.scatter(x,y);
+```
+
+```{python}
+def avgEe(beta,L):
+    erange = np.arange(-L,L+2,4)
+    logE = scipy.special.logsumexp(np.log(erange+2*L)+logrho(erange,L)-beta*erange) -logZe(beta,L)
+    return np.exp(logE)-2*L
+```
+
+```{python}
+def avgE(beta,L):
+    t = np.tanh(beta)
+    return -L*t*(1+t**(L-2))/(1+t**L)
+```
+
+```{python}
+def p_cond(s0,sL,beta,L):
+    t = np.tanh(beta)
+    return 0.5*(1+s0*t)*(1+sL*t**(L-1))/(1+s0*sL*t**L)
+```
+
+```{python}
+cfgs = np.loadtxt('../ising1_05.txt')
+```
+
+```{python}
+cfgs.shape
+```
+
+```{python}
+beta = 0.5
+```
+
+```{python}
+n_samples,L =cfgs.shape
+```
+
+```{python}
+mag = cfgs.sum(1)
+```
+
+```{python}
+plt.hist(mag, bins = 50, density=True);
+```
+
+```{python}
+mag[:].mean()
+```
+
+```{python}
+energy = -np.sum(cfgs*np.roll(cfgs,1,1),1)
+```
+
+```{python}
+energy.mean()
+```
+
+```{python}
+def energy_hist(data,L):
+    erange = np.arange(-L,L+1,4)
+    n_e =  (np.round(data).astype(int)+L)//4
+    vals =  np.bincount(n_e)
+    v = np.zeros(len(erange))
+    v[:len(vals)]=vals
+    return erange, np.log(v/len(data)+0.000000001)
+```
+
+```{python}
+xd, yd = energy_hist(energy,L)
+```
+
+```{python}
+x,y = logEhist(beta,32)
+```
+
+```{python}
+plt.scatter(xd,yd);
+plt.scatter(x,y);
+```
+
+```{python}
+l = 5
+num = np.sum((cfgs[:,0]==1.0) & (cfgs[:,l]==1.0) & (cfgs[:,1]==1.0))
+den = np.sum((cfgs[:,0]==1.0) & (cfgs[:,l]==1.0))
+num/den
+```
+
+```{python}
+p_cond(1,1,beta,l)
+```
+
+```{python}
+logZ(beta,L)
+```
+
+```{python}
+logZ(0.5,32)
+```
+
+```{python}
+
+```
