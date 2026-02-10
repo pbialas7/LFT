@@ -38,10 +38,10 @@ int main(int argc, char *argv[]) {
     std::bernoulli_distribution bern(0.5);
     std::normal_distribution<double> normal(0.0, 1.0);
     using lattice_t = lft::Lattice<uint32_t>;
-    lattice_t lat({base_options.Lx, base_options.Ly});
+    lattice_t lat({base_options.Lx, base_options.Ly},'C');
     ea::SpinField<lattice_t> spin_field(lat, 1);
 
-    lft::Lattice<uint32_t, 3> j_lat({lat.dims[0], lat.dims[1], 2});
+    lft::Lattice<uint32_t, 3> j_lat({2,lat.dims[0], lat.dims[1]},'C');
     auto j_field=lft::make_field(j_lat, 1.0);
     if (!ising) {
         if (binary) {

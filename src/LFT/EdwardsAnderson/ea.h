@@ -13,16 +13,17 @@
 #include "Field/Field.h"
 
 namespace ea {
-    template<typename L>
+    template <typename L>
     using SpinField = lft::Field<int8_t, L>;
-    template<typename L>
+    template <typename L>
     using JLattice = lft::Lattice<typename L::index_t, L::DIM + 1>;
-    template<typename L>
-    using JField = lft::Field<double, JLattice<L> >;
+    template <typename L>
+    using JField = lft::Field<double, JLattice<L>>;
 
-    template<typename L, typename RNG=std::mt19937_64>
+    template <typename L, typename RNG=std::mt19937_64>
     struct HeathBath {
         using size_t = L::size_t;
+        using index_t = L::index_t;
 
 
         using field_class = SpinField<L>;
@@ -30,18 +31,20 @@ namespace ea {
         using rng_t = RNG;
 
 
-        HeathBath(double beta, rng_t &rng, const JField<L> &j) : beta_(beta), rng_(rng), j_(j), j_lat_(j.lat) {
+        HeathBath(double beta, rng_t& rng, const JField<L>& j) : beta_(beta), rng_(rng), j_(j), j_lat_(j.lat) {
         }
 
-        size_t operator()(field_class &field, size_t i) {
+        size_t operator()(field_class& field, size_t i) {
             double corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
-                corona += field[field.lat.up(i, d)] * j_[i + j_lat_.n_elements * d];
+                auto idx = i + field.lat.n_elements * d;
+                corona += field[field.lat.up(i, d)] * j_[idx];
             }
 
             for (auto d = 0; d < L::DIM; ++d) {
                 auto dn_site = field.lat.dn(i, d);
-                corona += field[dn_site] * j_[dn_site + j_lat_.n_elements * d];
+                auto idx = dn_site + field.lat.n_elements * d;
+                corona += field[dn_site] * j_[idx];
             }
             double p_up = std::exp(beta_ * corona) / (std::exp(beta_ * corona) + std::exp(-beta_ * corona));
 
@@ -55,19 +58,19 @@ namespace ea {
 
     private:
         double beta_;
-        rng_t &rng_;
+        rng_t& rng_;
         std::uniform_real_distribution<double> u_;
         JField<L> j_;
         JLattice<L> j_lat_;
     };
 
-    template<typename Float, typename F>
-    Float magnetisation(const F &f) {
+    template <typename Float, typename F>
+    Float magnetisation(const F& f) {
         return mean<Float>(f);
     }
 
-    template<typename Float, typename F, typename JF>
-    Float energy(const F &field, const JF &j_) {
+    template <typename Float, typename F, typename JF>
+    Float energy(const F& field, const JF& j_) {
         Float e = 0.0;
         for (int i = 0; i < field.n_elements; ++i) {
             double corona = 0.0;
