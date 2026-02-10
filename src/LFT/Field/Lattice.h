@@ -12,19 +12,28 @@
 
 
 namespace {
-    template <typename I=uint32_t, int DIM = 2>
-    void set_volume(const std::array<I, DIM>& dims, std::array<I, DIM + 1>& volumes, char order = 'F') {
+
+    template<typename I, std::size_t DIM>
+    std::size_t n_elem_(const std::array<I,DIM> &dims) {
+        std::size_t n = dims[0];
+        for (int i = 1; i < DIM; i++)
+            n *= dims[i];
+        return n;
+    }
+
+    template <typename I, std::size_t DIM>
+    void set_strides_(const std::array<I, DIM>& dims, std::array<I, DIM>& strides, char order = 'F') {
         switch (order) {
         case 'F':
-            volumes[0] = 1;
-            for (auto i = 1; i < DIM + 1; ++i) {
-                volumes[i] = volumes[i - 1] * dims[i - 1];
+            strides[0] = 1;
+            for (auto i = 1; i < DIM; ++i) {
+                strides[i] = strides[i - 1] * dims[i - 1];
             }
             break;
         case 'C':
-            volumes[DIM] = 1;
+            strides[DIM] = 1;
             for (auto i = DIM - 1; i >= 0; --i) {
-                volumes[i] = volumes[i + 1] * dims[i];
+                strides[i] = strides[i + 1] * dims[i];
             }
             break;
         default:
@@ -51,12 +60,12 @@ namespace lft {
         MultiIndex(dims_t dims) : dims(dims) {
             std::fill_n(coords_.begin(), DIM, 0);
             set_volume();
-            set_strides();
+            set_strides_(this->dims, strides_, 'F');
         }
 
         MultiIndex(dims_t dims, dims_t idx) : dims(dims), coords_(idx) {
             set_volume();
-            set_strides();
+            set_strides_(this->dims, strides_, 'F');
         }
 
         MultiIndex& operator++() {
@@ -95,12 +104,6 @@ namespace lft {
             }
         }
 
-        void set_strides() {
-            strides_[0] = 1;
-            for (auto i = 1; i < DIM; ++i) {
-                strides_[i] = strides_[i - 1] * dims[i - 1];
-            }
-        }
 
         std::array<index_t, DIM> coords_;
         std::array<index_t, DIM> strides_;
@@ -136,7 +139,7 @@ namespace lft {
                                            nn_(2 * DIM * n_elements) {
             MultiIndex<I, DIM> m_index(dims);
 
-            set_strides();
+            set_strides_(dims, strides_, 'F');
 
             for (auto i = 0; i < m_index.n_elements(); i++, ++m_index) {
                 auto idx_ = i;
@@ -204,14 +207,7 @@ namespace lft {
         const size_t n_elements;
 
     private:
-        std::array<int, DIM> strides_;
-
-        void set_strides() {
-            strides_[0] = 1;
-            for (auto i = 1; i < DIM; ++i) {
-                strides_[i] = strides_[i - 1] * dims[i - 1];
-            }
-        }
+        dim_t strides_;
 
         std::vector<size_t> nn_;
 

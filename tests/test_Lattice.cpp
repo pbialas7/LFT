@@ -9,7 +9,7 @@
 using namespace lft;
 
 TEST_CASE("Latttice constructors indexing 1D", "[Constructors] [Lattice][1D]{indexing") {
-    const int Lx = 8;
+    const uint8_t Lx = 8;
 
     Lattice<int8_t, 1> lattice({Lx});
     REQUIRE(lattice.n_elements == 8);

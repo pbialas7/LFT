@@ -23,8 +23,8 @@ TEST_CASE("MultiIndex constructors", "[Constructors] [MultiIndex]") {
 }
 
 TEST_CASE("MultiIndex indexing", "[MultiIndex][Indexing]") {
-    const int Lx = 3;
-    const int Ly = 2;
+    const uint8_t Lx = 3;
+    const uint8_t Ly = 2;
 
     MultiIndex<int8_t, 2> index({Lx, Ly});
 
