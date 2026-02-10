@@ -13,10 +13,10 @@ TEST_CASE("MultiIndex constructors", "[Constructors] [MultiIndex]") {
     MultiIndex<int8_t, 2> index({Lx, Ly});
     REQUIRE(index.dims[0] == Lx);
     REQUIRE(index.dims[0] == Ly);
-    REQUIRE(index.volumes_[0] == 1);
-    REQUIRE(index.volumes_[1] == Lx);
-    REQUIRE(index.volumes_[2] == Lx * Ly);
-    REQUIRE(index.volume() == 64);
+    REQUIRE(index.strides()[0] == 1);
+    REQUIRE(index.strides()[1] == Lx);
+    REQUIRE(index.n_elements() == Lx * Ly);
+
 
 }
 
@@ -26,7 +26,7 @@ TEST_CASE("MultiIndex indexing", "[MultiIndex][Indexing]") {
 
     MultiIndex<int8_t, 2> index({Lx, Ly});
 
-    REQUIRE(index.volume() == 6);
+    REQUIRE(index.n_elements() == 6);
 
     // [ 3 4 5]
     // [ 0 1 2]
@@ -42,8 +42,8 @@ TEST_CASE("MultiIndex indexing", "[MultiIndex][Indexing]") {
         REQUIRE(index.coords()[0] == 2);
         REQUIRE(index.coords()[1] == 1);
 
-        REQUIRE(index.volumes_[0] == 1);
-        REQUIRE(index.volumes_[1] == Lx);
+        REQUIRE(index.strides()[0] == 1);
+        REQUIRE(index.strides()[1] == Lx);
         REQUIRE(index.idx() == 5);
     }
 
@@ -94,7 +94,7 @@ TEST_CASE("MultiIndex inc", "[MultiIndex][inc]") {
 
     MultiIndex<int8_t, 2> index({Lx, Ly});
 
-    REQUIRE(index.volume() == Lx * Ly);
+    REQUIRE(index.n_elements() == Lx * Ly);
 
 
     for (int i = 0; i < Lx * Ly; ++i, ++index) {

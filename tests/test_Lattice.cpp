@@ -21,10 +21,20 @@ TEST_CASE("Latttice constructors indexing 1D", "[Constructors] [Lattice][1D]{ind
 
 TEST_CASE("Latttice constructors", "[Constructors] [Lattice]") {
     const int Lx = 8;
-    const int Ly = 8;
+    const int Ly = 7;
 
     Lattice<int8_t> lattice({Lx, Ly});
-    REQUIRE(lattice.n_elements == 64);
+    REQUIRE(lattice.n_elements == Lx*Ly);
+
+    for (int i = 0; i < Lx; i++) {
+        for (int j = 0; j < Ly; j++) {
+            INFO("i = " <<i << " j = " << j);
+            auto idx = i + j * Lx;
+
+            REQUIRE(lattice.idx({i, j})==idx);
+            REQUIRE(lattice.idx({i, j})==idx);
+        }
+    }
 }
 
 TEST_CASE("Lattice indexing", "[Lattice][Indexing]") {

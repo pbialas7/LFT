@@ -11,7 +11,35 @@
 #include <spdlog/spdlog.h>
 
 
-template<typename I=uint32_t, int D = 2>
+namespace {
+    template <typename I=uint32_t, int DIM = 2>
+    void set_volume(const std::array<I, DIM>& dims, std::array<I, DIM + 1>& volumes, char order = 'F') {
+        switch (order) {
+        case 'F':
+            volumes[0] = 1;
+            for (auto i = 1; i < DIM + 1; ++i) {
+                volumes[i] = volumes[i - 1] * dims[i - 1];
+            }
+            break;
+        case 'C':
+            volumes[DIM] = 1;
+            for (auto i = DIM - 1; i >= 0; --i) {
+                volumes[i] = volumes[i + 1] * dims[i];
+            }
+            break;
+        default:
+            spdlog::error("Invalid order: {}, expected 'C' or 'F'", order);
+        }
+    }
+}
+
+template <typename I=uint32_t, int D = 2>
+/*
+ * MultiIndex class is used to iterate over the lattice sites and to convert between coordinates and linear index.
+ * It is used in the Lattice class to initialize the nearest neighbor indices and to separate even and odd sites.
+ *
+ *  i_0, i_1, i_2 -> i_0 +dims[0]* i_1 + dims[0]*dims[1]*i_2
+ */
 class MultiIndex {
 public:
     static const int DIM = D;
@@ -21,17 +49,19 @@ public:
     MultiIndex(dims_t dims) : dims(dims) {
         std::fill_n(coords_.begin(), DIM, 0);
         set_volume();
+        set_strides();
     }
 
     MultiIndex(dims_t dims, dims_t idx) : dims(dims), coords_(idx) {
         set_volume();
+        set_strides();
     }
 
-    MultiIndex &operator++() {
+    MultiIndex& operator++() {
         coords_[0]++;
         for (auto i = 0; i < DIM - 1; i++) {
             if (coords_[i] >= dims[i]) {
-                coords_[i + 1]++;
+                ++coords_[i + 1];
                 coords_[i] = 0;
             }
         }
@@ -43,31 +73,47 @@ public:
     size_t idx() const {
         index_t idx = 0;
         for (auto i = 0; i < DIM; i++) {
-            idx += volumes_[i] * coords_[i];
+            idx += strides_[i] * coords_[i];
         }
         return idx;
     }
 
-    index_t volume() const { return volumes_[DIM]; }
+    index_t n_elements() const { return n_elements_; }
 
     const std::array<index_t, DIM> dims;
 
+
+    auto strides() const { return strides_; }
+
 private:
     void set_volume() {
-        volumes_[0] = 1;
-        for (auto i = 1; i < DIM + 1; ++i) {
-            volumes_[i] = volumes_[i - 1] * dims[i - 1];
+        n_elements_ = 1;
+        for (auto i = 0; i < DIM; ++i) {
+            n_elements_ *= dims[i];
+        }
+    }
+
+    void set_strides() {
+        strides_[0] = 1;
+        for (auto i = 1; i < DIM; ++i) {
+            strides_[i] = strides_[i - 1] * dims[i - 1];
         }
     }
 
     std::array<index_t, DIM> coords_;
-
-public:
-    std::array<index_t, DIM + 1> volumes_;
+    std::array<index_t, DIM> strides_;
+    uint64_t n_elements_;
 };
 
-
-template<typename I=uint32_t, int D = 2>
+/*
+ * Lattice class represents a D-dimensional lattice with periodic boundary conditions. It stores the dimensions of the lattice,
+ * the number of elements, the nearest neighbor indices, and the even and odd sites. The nearest neighbor indices are stored in a flat vector,
+ * where the first half corresponds to the negative direction and the second half corresponds to the positive direction
+ * The even and odd sites are separated based on the sum of their coordinates, which is used for certain algorithms that require a checkerboard pattern.
+ * The class provides methods to get the nearest neighbor indices, the even and odd sites, and
+ * to convert between coordinates and linear index.
+ */
+template <typename I=uint32_t, int D = 2>
 class Lattice {
 public:
     static const int DIM = D;
@@ -87,7 +133,9 @@ public:
                                          nn_(2 * DIM * n_elements) {
         MultiIndex<int, DIM> m_index(dims);
 
-        for (auto i = 0; i < m_index.volume(); i++, ++m_index) {
+        set_strides();
+
+        for (auto i = 0; i < m_index.n_elements(); i++, ++m_index) {
             auto idx_ = i;
             auto coords = m_index.coords();
             size_t i_sum = 0;
@@ -96,7 +144,8 @@ public:
 
             if (i_sum % 2 == 0) {
                 even_.push_back(idx_);
-            } else {
+            }
+            else {
                 odd_.push_back(idx_);
             }
 
@@ -121,15 +170,13 @@ public:
                 nn_[2 * idx_ * DIM + j] = idx(d_coords_);
             }
         }
-
-        set_volume();
     }
 
 
     size_t idx(dim_t coords) const {
-        std::size_t idx = coords[DIM - 1];
-        for (int i = DIM - 1; i > 0; i--) {
-            idx = idx * dims[i - 1] + coords[i - 1];
+        std::size_t idx = 0;
+        for (int i = 0; i < DIM; ++i) {
+            idx += coords[i] * strides_[i];
         }
         return idx;
     }
@@ -147,14 +194,15 @@ public:
     size_t odd(size_t i) const { return odd_[i]; }
 
     const dim_t dims;
-    std::array<int, DIM + 1> volumes;
     const size_t n_elements;
 
 private:
-    void set_volume() {
-        volumes[0] = 1;
-        for (auto i = 1; i < DIM + 1; ++i) {
-            volumes[i] = volumes[i - 1] * dims[i - 1];
+    std::array<int, DIM + 1> strides_;
+
+    void set_strides() {
+        strides_[0] = 1;
+        for (auto i = 1; i < DIM; ++i) {
+            strides_[i] = strides_[i - 1] * dims[i - 1];
         }
     }
 
