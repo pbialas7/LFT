@@ -1,0 +1,49 @@
+//
+// Created by pbialas on 20.01.2022.
+//
+
+#include  "catch2/catch_test_macros.hpp"
+
+#include "Field/Field.h"
+
+using namespace lft;
+
+TEST_CASE("Field Constructors C", "[Field][Constructors]") {
+    const int Lx = 8;
+    const int Ly = 8;
+
+    Lattice<> lat({Lx, Ly}, 'C');
+
+    auto field1 = make_field<int8_t>(lat);
+    REQUIRE(field1.n_elements == 64);
+
+    auto field2 = make_field<int8_t>(lat, -1);
+    REQUIRE(field2.n_elements == 64);
+    for (auto i = 0; i < field2.n_elements; i++) {
+        REQUIRE(field2[i] == -1);
+    }
+}
+
+TEST_CASE("Field Corona C", "[Field][Corona]") {
+    const int Lx = 4;
+    const int Ly = 4;
+
+    Lattice<int8_t> lat({Lx, Lx}, 'C');
+
+    Field<int8_t, decltype(lat)> field(lat);
+    REQUIRE(field.n_elements == Lx * Ly);
+
+
+    // [12 13 14 15]
+    // [ 8  9 10 11]
+    // [ 4  5  6  7]
+    // [ 0  1  2  3]
+
+    for (auto i = 0; i < field.n_elements; i++) {
+        field[i] = i;
+    }
+
+    REQUIRE(int(field.corona(0)) == 20);
+    REQUIRE(int(field.corona(15)) == (11+3+14+12));
+    REQUIRE(int(field.corona(5)) == (4+6+1+9));
+}

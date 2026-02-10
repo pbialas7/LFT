@@ -3,8 +3,11 @@ project(test LANGUAGES CXX)
 
 add_executable(test test.cpp
         test_Lattice.cpp
+        test_Lattice_C.cpp
         test_multiindex.cpp
+        test_multiindex_C.cpp
         test_Field.cpp
+        test_Field_C.cpp
         test_ising.cpp
         test_sweep.cpp
 )
