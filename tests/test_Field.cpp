@@ -12,10 +12,11 @@ TEST_CASE("Field Constructors", "[Field][Constructors]") {
 
     Lattice<> lat({Lx, Ly});
 
-    Field<int8_t, decltype(lat)> field1(lat);
+    auto field1 = make_field<int8_t>(lat);
     REQUIRE(field1.n_elements == 64);
-    Field<int8_t, decltype(lat)> field2(lat, -1);
-    REQUIRE(field1.n_elements == 64);
+
+    auto field2 = make_field<int8_t>(lat, -1);
+    REQUIRE(field2.n_elements == 64);
     for (auto i = 0; i < field2.n_elements; i++) {
         REQUIRE(field2[i] == -1);
     }
@@ -43,5 +44,4 @@ TEST_CASE("Field Corona", "[Field][Corona]") {
     REQUIRE(int(field.corona(0)) == 20);
     REQUIRE(int(field.corona(15)) == (11+3+14+12));
     REQUIRE(int(field.corona(5)) == (4+6+1+9));
-
 }

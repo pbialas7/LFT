@@ -26,8 +26,8 @@ TEST_CASE("Latttice constructors", "[Constructors] [Lattice]") {
     Lattice<int8_t> lattice({Lx, Ly});
     REQUIRE(lattice.n_elements == Lx*Ly);
 
-    for (int i = 0; i < Lx; i++) {
-        for (int j = 0; j < Ly; j++) {
+    for (int8_t i = 0; i < Lx; i++) {
+        for (int8_t j = 0; j < Ly; j++) {
             INFO("i = " <<i << " j = " << j);
             auto idx = i + j * Lx;
 
