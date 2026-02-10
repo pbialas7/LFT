@@ -10,7 +10,7 @@
 
 #include "Lattice.h"
 
-template<typename F, typename L=Lattice<> >
+template<typename F, typename L >
 class Field {
 public:
     using field_t = F;
@@ -39,7 +39,7 @@ public:
     }
 
 
-    field_t up_corona(typename lattice_t::size_t i) const {
+    field_t up_corona(typename lattice_t::index_t i) const {
         field_t corona_ = field_t(0);
         for (auto d = 0; d < DIM; ++d) {
             corona_ += field_[lat.up(i, d)];
@@ -47,7 +47,7 @@ public:
         return corona_;
     }
 
-    field_t dn_corona(typename lattice_t::size_t i) const {
+    field_t dn_corona(typename lattice_t::index_t i) const {
         field_t corona_ = field_t(0);
         for (auto d = 0; d < DIM; ++d) {
             corona_ += field_[lat.dn(i, d)];
@@ -55,7 +55,7 @@ public:
         return corona_;
     }
 
-    field_t corona(typename lattice_t::size_t i) const {
+    field_t corona(typename lattice_t::index_t i) const {
         return up_corona(i) + dn_corona(i);
     }
 

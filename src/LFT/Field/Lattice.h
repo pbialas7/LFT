@@ -33,7 +33,7 @@ namespace {
     }
 }
 
-template <typename I=uint32_t, int D = 2>
+template <typename I, int D>
 /*
  * MultiIndex class is used to iterate over the lattice sites and to convert between coordinates and linear index.
  * It is used in the Lattice class to initialize the nearest neighbor indices and to separate even and odd sites.
@@ -117,8 +117,9 @@ template <typename I=uint32_t, int D = 2>
 class Lattice {
 public:
     static const int DIM = D;
-    using dim_t = std::array<int, DIM>;
-    using size_t = I;
+    using dim_t = std::array<I, DIM>;
+    using index_t = I;
+    using size_t = std::size_t;
 
 private:
     static std::size_t n_elem(dim_t dims) {
@@ -129,9 +130,9 @@ private:
     }
 
 public:
-    Lattice(std::array<int, DIM> dims) : dims(dims), n_elements(n_elem(dims)),
-                                         nn_(2 * DIM * n_elements) {
-        MultiIndex<int, DIM> m_index(dims);
+    Lattice(std::array<I, DIM> dims) : dims(dims), n_elements(n_elem(dims)),
+                                       nn_(2 * DIM * n_elements) {
+        MultiIndex<I, DIM> m_index(dims);
 
         set_strides();
 
@@ -150,20 +151,24 @@ public:
             }
 
             for (auto j = 0; j < DIM; j++) {
-                auto u_ = coords[j] + 1;
-                if (u_ >= dims[j])
-                    u_ -= dims[j];
+                I u_;
+                if (coords[j] == dims[j]-1)
+                    u_ = 0;
+                else
+                    u_ = coords[j] + 1;
+
                 auto u_coords_ = coords;
                 u_coords_[j] = u_;
-
 
                 nn_[2 * idx_ * DIM + DIM + j] = idx(u_coords_);
             }
 
             for (auto j = 0; j < DIM; j++) {
-                auto d_ = coords[j] - 1;
-                if (d_ < 0)
-                    d_ += dims[j];
+                I d_;
+                if (coords[j] == 0)
+                    d_ = dims[j] - 1;
+                else
+                    d_ = coords[j] - 1;
                 auto d_coords_ = coords;
                 d_coords_[j] = d_;
 
@@ -197,7 +202,7 @@ public:
     const size_t n_elements;
 
 private:
-    std::array<int, DIM + 1> strides_;
+    std::array<int, DIM> strides_;
 
     void set_strides() {
         strides_[0] = 1;

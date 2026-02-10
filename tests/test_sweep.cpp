@@ -11,7 +11,7 @@
 #include "Field/Field.h"
 #include "MonteCarlo/sweep.h"
 
-template<typename F>
+template <typename F>
 struct MakeOne {
     typename F::lattice_t::size_t operator()(F &field, typename F::lattice_t::size_t site) {
         field[site] = 1;
@@ -25,15 +25,14 @@ TEST_CASE("sweep", "[sweep]") {
 
     Lattice<> lat({Lx, Ly});
 
-    Field<int8_t> field(lat, -1);
+    Field<int8_t, decltype(lat)> field(lat, -1);
     for (auto i = 0; i < field.n_elements; i++) {
         REQUIRE(field[i] == -1);
     }
-    MakeOne<Field<int8_t>> update;
+    MakeOne<Field<int8_t, decltype(lat)>> update;
     auto acceptance = sweep(field, update);
     REQUIRE(acceptance == Lx * Ly);
     for (auto i = 0; i < field.n_elements; i++) {
         REQUIRE(int(field[i]) == 1);
     }
-
 }

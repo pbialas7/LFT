@@ -12,9 +12,9 @@ TEST_CASE("Field Constructors", "[Field][Constructors]") {
 
     Lattice<> lat({Lx, Ly});
 
-    Field<int8_t> field1(lat);
+    Field<int8_t, decltype(lat)> field1(lat);
     REQUIRE(field1.n_elements == 64);
-    Field<int8_t> field2(lat, -1);
+    Field<int8_t, decltype(lat)> field2(lat, -1);
     REQUIRE(field1.n_elements == 64);
     for (auto i = 0; i < field2.n_elements; i++) {
         REQUIRE(field2[i] == -1);
@@ -25,9 +25,9 @@ TEST_CASE("Field Corona", "[Field][Corona]") {
     const int Lx = 4;
     const int Ly = 4;
 
-    Lattice<> lat({Lx, Lx});
+    Lattice<int8_t> lat({Lx, Lx});
 
-    Field<int8_t> field(lat);
+    Field<int8_t, decltype(lat)> field(lat);
     REQUIRE(field.n_elements == Lx * Ly);
 
 
