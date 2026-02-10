@@ -30,9 +30,9 @@ namespace {
             }
             break;
         case 'C':
-            strides[DIM] = 1;
-            for (auto i = DIM - 1; i >= 0; --i) {
-                strides[i] = strides[i + 1] * dims[i];
+            strides[DIM - 1] = 1;
+            for (int i = DIM - 1; i > 0; --i) {
+                strides[i - 1] = strides[i] * dims[i];
             }
             break;
         default:
@@ -56,22 +56,38 @@ namespace lft {
         using index_t = I;
         using dims_t = std::array<index_t, DIM>;
 
-        MultiIndex(dims_t dims, char order) : dims(dims), n_elements(n_elem_(dims)) {
+        MultiIndex(dims_t dims, char order) : dims(dims), n_elements(n_elem_(dims)), order_(order) {
             std::fill_n(coords_.begin(), DIM, 0);
             set_strides_(this->dims, strides_, order);
         }
 
-        MultiIndex(dims_t dims, dims_t idx, char order) : dims(dims), coords_(idx), n_elements(n_elem_(dims)) {
+        MultiIndex(dims_t dims, dims_t idx, char order) : order_(order), dims(dims), coords_(idx),
+                                                          n_elements(n_elem_(dims)) {
             set_strides_(this->dims, strides_, order);
         }
 
         MultiIndex& operator++() {
-            coords_[0]++;
-            for (auto i = 0; i < DIM - 1; i++) {
-                if (coords_[i] >= dims[i]) {
-                    ++coords_[i + 1];
-                    coords_[i] = 0;
+            switch (order_) {
+            case 'F':
+                coords_[0]++;
+                for (auto i = 0; i < DIM - 1; i++) {
+                    if (coords_[i] >= dims[i]) {
+                        ++coords_[i + 1];
+                        coords_[i] = 0;
+                    }
                 }
+                break;
+            case 'C':
+                coords_[DIM - 1]++;
+                for (int i = DIM - 1; i > 0; --i) {
+                    if (coords_[i] >= dims[i]) {
+                        ++coords_[i - 1];
+                        coords_[i] = 0;
+                    }
+                }
+                break;
+            default:
+                spdlog::error("Invalid order: {}, expected 'C' or 'F'", order_);
             }
             return *this;
         }
@@ -87,16 +103,16 @@ namespace lft {
         }
 
 
-        const  std::size_t n_elements;
+        const std::size_t n_elements;
         const std::array<index_t, DIM> dims;
 
 
         auto strides() const { return strides_; }
 
     private:
+        char order_;
         std::array<index_t, DIM> coords_;
         std::array<index_t, DIM> strides_;
-
     };
 
     /*
