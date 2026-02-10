@@ -12,7 +12,7 @@ TEST_CASE("MultiIndex constructors", "[Constructors] [MultiIndex]") {
     const int Lx = 8;
     const int Ly = 8;
 
-    MultiIndex<int8_t, 2> index({Lx, Ly});
+    MultiIndex<int8_t, 2> index({Lx, Ly},'F');
     REQUIRE(index.dims[0] == Lx);
     REQUIRE(index.dims[0] == Ly);
     REQUIRE(index.strides()[0] == 1);
@@ -26,7 +26,7 @@ TEST_CASE("MultiIndex indexing", "[MultiIndex][Indexing]") {
     const uint8_t Lx = 3;
     const uint8_t Ly = 2;
 
-    MultiIndex<int8_t, 2> index({Lx, Ly});
+    MultiIndex<int8_t, 2> index({Lx, Ly},'F');
 
     REQUIRE(index.n_elements() == 6);
 
@@ -40,7 +40,7 @@ TEST_CASE("MultiIndex indexing", "[MultiIndex][Indexing]") {
     }
 
     {
-        MultiIndex<int8_t, 2> index({Lx, Ly}, {2, 1});
+        MultiIndex<int8_t, 2> index({Lx, Ly}, {2, 1},'F');
         REQUIRE(index.coords()[0] == 2);
         REQUIRE(index.coords()[1] == 1);
 
@@ -50,7 +50,7 @@ TEST_CASE("MultiIndex indexing", "[MultiIndex][Indexing]") {
     }
 
     {
-        MultiIndex<int8_t, 2> index({Lx, Ly});
+        MultiIndex<int8_t, 2> index({Lx, Ly},'F');
         {
             auto coords = index.coords();
             REQUIRE(coords[0] == 0);
@@ -94,7 +94,7 @@ TEST_CASE("MultiIndex inc", "[MultiIndex][inc]") {
     const int Lx = 4;
     const int Ly = 4;
 
-    MultiIndex<int8_t, 2> index({Lx, Ly});
+    MultiIndex<int8_t, 2> index({Lx, Ly},'F');
 
     REQUIRE(index.n_elements() == Lx * Ly);
 

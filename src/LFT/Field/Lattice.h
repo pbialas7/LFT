@@ -57,15 +57,15 @@ namespace lft {
         using index_t = I;
         using dims_t = std::array<index_t, DIM>;
 
-        MultiIndex(dims_t dims) : dims(dims) {
+        MultiIndex(dims_t dims, char order) : dims(dims) {
             std::fill_n(coords_.begin(), DIM, 0);
             set_volume();
-            set_strides_(this->dims, strides_, 'F');
+            set_strides_(this->dims, strides_, order);
         }
 
-        MultiIndex(dims_t dims, dims_t idx) : dims(dims), coords_(idx) {
+        MultiIndex(dims_t dims, dims_t idx, char order) : dims(dims), coords_(idx) {
             set_volume();
-            set_strides_(this->dims, strides_, 'F');
+            set_strides_(this->dims, strides_, order);
         }
 
         MultiIndex& operator++() {
@@ -135,11 +135,11 @@ namespace lft {
         }
 
     public:
-        Lattice(std::array<I, DIM> dims) : dims(dims), n_elements(n_elem(dims)),
+        Lattice(std::array<I, DIM> dims, char order ='F') : dims(dims), n_elements(n_elem(dims)),
                                            nn_(2 * DIM * n_elements) {
-            MultiIndex<I, DIM> m_index(dims);
+            MultiIndex<I, DIM> m_index(dims, order);
 
-            set_strides_(dims, strides_, 'F');
+            set_strides_(dims, strides_, order);
 
             for (auto i = 0; i < m_index.n_elements(); i++, ++m_index) {
                 auto idx_ = i;
