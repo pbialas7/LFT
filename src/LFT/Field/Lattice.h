@@ -12,9 +12,8 @@
 
 
 namespace {
-
-    template<typename I, std::size_t DIM>
-    std::size_t n_elem_(const std::array<I,DIM> &dims) {
+    template <typename I, std::size_t DIM>
+    std::size_t n_elem_(const std::array<I, DIM>& dims) {
         std::size_t n = dims[0];
         for (int i = 1; i < DIM; i++)
             n *= dims[i];
@@ -57,14 +56,12 @@ namespace lft {
         using index_t = I;
         using dims_t = std::array<index_t, DIM>;
 
-        MultiIndex(dims_t dims, char order) : dims(dims) {
+        MultiIndex(dims_t dims, char order) : dims(dims), n_elements(n_elem_(dims)) {
             std::fill_n(coords_.begin(), DIM, 0);
-            set_volume();
             set_strides_(this->dims, strides_, order);
         }
 
-        MultiIndex(dims_t dims, dims_t idx, char order) : dims(dims), coords_(idx) {
-            set_volume();
+        MultiIndex(dims_t dims, dims_t idx, char order) : dims(dims), coords_(idx), n_elements(n_elem_(dims)) {
             set_strides_(this->dims, strides_, order);
         }
 
@@ -89,25 +86,17 @@ namespace lft {
             return idx;
         }
 
-        index_t n_elements() const { return n_elements_; }
 
+        const  std::size_t n_elements;
         const std::array<index_t, DIM> dims;
 
 
         auto strides() const { return strides_; }
 
     private:
-        void set_volume() {
-            n_elements_ = 1;
-            for (auto i = 0; i < DIM; ++i) {
-                n_elements_ *= dims[i];
-            }
-        }
-
-
         std::array<index_t, DIM> coords_;
         std::array<index_t, DIM> strides_;
-        uint64_t n_elements_;
+
     };
 
     /*
@@ -126,22 +115,14 @@ namespace lft {
         using index_t = I;
         using size_t = std::size_t;
 
-    private:
-        static std::size_t n_elem(dim_t dims) {
-            std::size_t n = dims[0];
-            for (int i = 1; i < DIM; i++)
-                n *= dims[i];
-            return n;
-        }
 
-    public:
-        Lattice(std::array<I, DIM> dims, char order ='F') : dims(dims), n_elements(n_elem(dims)),
-                                           nn_(2 * DIM * n_elements) {
+        Lattice(std::array<I, DIM> dims, char order = 'F') : dims(dims), n_elements(n_elem_(dims)),
+                                                             nn_(2 * DIM * n_elements) {
             MultiIndex<I, DIM> m_index(dims, order);
 
             set_strides_(dims, strides_, order);
 
-            for (auto i = 0; i < m_index.n_elements(); i++, ++m_index) {
+            for (auto i = 0; i < m_index.n_elements; i++, ++m_index) {
                 auto idx_ = i;
                 auto coords = m_index.coords();
                 size_t i_sum = 0;

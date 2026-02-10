@@ -17,7 +17,7 @@ TEST_CASE("MultiIndex constructors", "[Constructors] [MultiIndex]") {
     REQUIRE(index.dims[0] == Ly);
     REQUIRE(index.strides()[0] == 1);
     REQUIRE(index.strides()[1] == Lx);
-    REQUIRE(index.n_elements() == Lx * Ly);
+    REQUIRE(index.n_elements == Lx * Ly);
 
 
 }
@@ -28,7 +28,7 @@ TEST_CASE("MultiIndex indexing", "[MultiIndex][Indexing]") {
 
     MultiIndex<int8_t, 2> index({Lx, Ly},'F');
 
-    REQUIRE(index.n_elements() == 6);
+    REQUIRE(index.n_elements == 6);
 
     // [ 3 4 5]
     // [ 0 1 2]
@@ -96,7 +96,7 @@ TEST_CASE("MultiIndex inc", "[MultiIndex][inc]") {
 
     MultiIndex<int8_t, 2> index({Lx, Ly},'F');
 
-    REQUIRE(index.n_elements() == Lx * Ly);
+    REQUIRE(index.n_elements == Lx * Ly);
 
 
     for (int i = 0; i < Lx * Ly; ++i, ++index) {
