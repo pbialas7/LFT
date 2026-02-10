@@ -37,12 +37,12 @@ int main(int argc, char *argv[]) {
     std::mt19937_64 rng(base_options.seed);
     std::bernoulli_distribution bern(0.5);
     std::normal_distribution<double> normal(0.0, 1.0);
-    using lattice_t = Lattice<uint32_t>;
+    using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly});
     ea::SpinField<lattice_t> spin_field(lat, 1);
 
-    Lattice<uint32_t, 3> j_lat({lat.dims[0], lat.dims[1], 2});
-    ea::JField<lattice_t> j_field(j_lat, 1);
+    lft::Lattice<uint32_t, 3> j_lat({lat.dims[0], lat.dims[1], 2});
+    auto j_field=lft::make_field(j_lat, 1.0);
     if (!ising) {
         if (binary) {
             for (int i = 0; i < j_field.n_elements; ++i) {

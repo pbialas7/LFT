@@ -6,6 +6,8 @@
 
 #include "Field/Lattice.h"
 
+using namespace lft;
+
 TEST_CASE("Latttice constructors indexing 1D", "[Constructors] [Lattice][1D]{indexing") {
     const int Lx = 8;
 

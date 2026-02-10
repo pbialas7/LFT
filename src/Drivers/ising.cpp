@@ -18,8 +18,8 @@ namespace fs = std::filesystem;
 #include "utils/fs.h"
 #include "utils/extract.h"
 
-int main(int argc, char *argv[]) {
-    int Lx = 0, Ly = 0;
+int main(int argc, char* argv[]) {
+    uint32_t Lx = 0, Ly = 0;
     std::size_t n_sweeps = 0, n_term = 0;
     bool cold_start = false;
     double beta = 0.0;
@@ -35,23 +35,23 @@ int main(int argc, char *argv[]) {
     std::mt19937_64::result_type seed = std::mt19937_64::default_seed;
 
     auto cli = lyra::cli()
-               | lyra::opt(Lx, "Lx")["-x"]["--Lx"]("Lx")
-               | lyra::opt(Ly, "Ly")["-y"]["--Ly"]("Ly")
-               | lyra::opt(beta, "beta")["-b"]["--beta"]("inverse temperature")
-               | lyra::opt(n_sweeps, "n sweeps ")["-n"]["--n-sweeps"]("number of measurment sweeps")
-               | lyra::opt(n_clusters, "n clusters")["-k"]["--n-clusters"](
-                   "number of clusters in a sweep for Wolff algorithm")
-               | lyra::opt(n_term, "n term ")["-t"]["--n-term"]("number of termalisation sweeps")
-               | lyra::opt(cold_start)["-c"]["--cold-start"]("cold start")
-               | lyra::opt(wolff)["-w"]["--wolff"]("use Wolff algorithm")
+        | lyra::opt(Lx, "Lx")["-x"]["--Lx"]("Lx")
+        | lyra::opt(Ly, "Ly")["-y"]["--Ly"]("Ly")
+        | lyra::opt(beta, "beta")["-b"]["--beta"]("inverse temperature")
+        | lyra::opt(n_sweeps, "n sweeps ")["-n"]["--n-sweeps"]("number of measurment sweeps")
+        | lyra::opt(n_clusters, "n clusters")["-k"]["--n-clusters"](
+            "number of clusters in a sweep for Wolff algorithm")
+        | lyra::opt(n_term, "n term ")["-t"]["--n-term"]("number of termalisation sweeps")
+        | lyra::opt(cold_start)["-c"]["--cold-start"]("cold start")
+        | lyra::opt(wolff)["-w"]["--wolff"]("use Wolff algorithm")
 
-               | lyra::opt(seed, "seed")["--seed"]("seed")
-               | lyra::opt(name, "name")["--name"]("name")
-               | lyra::opt(data_dir, "data_dir")["--data-dir"]("data directory")
-               | lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measurment frequency")
-               | lyra::opt(corr_freq, "correlation measure frequency")["--corr-freq"]("correlation measure frequency")
-               | lyra::opt(tune_wolff, "tune steps")["--tune-wolff"]("number of tuning steps for wolf algorithm")
-               | lyra::opt(save_freq, "save frequency")["--save-freq"]("configuration save frequency");
+        | lyra::opt(seed, "seed")["--seed"]("seed")
+        | lyra::opt(name, "name")["--name"]("name")
+        | lyra::opt(data_dir, "data_dir")["--data-dir"]("data directory")
+        | lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measurment frequency")
+        | lyra::opt(corr_freq, "correlation measure frequency")["--corr-freq"]("correlation measure frequency")
+        | lyra::opt(tune_wolff, "tune steps")["--tune-wolff"]("number of tuning steps for wolf algorithm")
+        | lyra::opt(save_freq, "save frequency")["--save-freq"]("configuration save frequency");
 
 
     auto results = cli.parse({argc, argv});
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
         fs::create_directories(data_path);
     }
 
-    using lattice_t = Lattice<uint32_t>;
+    using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({Lx, Ly});
     ising::IsingField<lattice_t> ising(lat, 1);
     // ReSharper disable once CppDFAConstantConditions
@@ -88,8 +88,9 @@ int main(int argc, char *argv[]) {
         // ReSharper disable once CppDFAUnreachableCode
         if (wolff) {
             c += wolff_update.sweep(n_clusters);
-        } else {
-            c+= sweep(ising, update);
+        }
+        else {
+            c += sweep(ising, update);
         }
     }
 
@@ -139,26 +140,27 @@ int main(int argc, char *argv[]) {
         if (wolff) {
             c_size += wolff_update.sweep(n_clusters);
             c += c_size;
-        } else
-            c+=sweep(ising, update);
+        }
+        else
+            c += sweep(ising, update);
 
         if ((meas_freq > 0) && (i + 1) % meas_freq == 0) {
             energy_mag << ising::energy<double>(ising) << " " << ising::magnetisation<double>(ising)
-                    << " " << c_size << std::endl;
+                << " " << c_size << std::endl;
         }
         if ((corr_freq > 0) && (i + 1) % corr_freq == 0) {
             std::fill_n(cor_function.begin(), Lx, 0.0);
             correlation<double>(ising, cor_function);
-            correlations.write(reinterpret_cast<char *>(cor_function.data()), cor_function.size() * sizeof(double));
+            correlations.write(reinterpret_cast<char*>(cor_function.data()), cor_function.size() * sizeof(double));
         }
 
 
         if ((save_freq > 0) && (i + 1) % save_freq == 0) {
-            configurations.write(reinterpret_cast<const char *>(ising.data()),
+            configurations.write(reinterpret_cast<const char*>(ising.data()),
                                  ising.n_elements * sizeof(ising::IsingField<lattice_t>::field_t));
             extract_edges(ising, edges);
-            edges_stream.write(reinterpret_cast<const char *>(edges.data()),
-                edges.size() * sizeof(decltype(ising)::field_t));
+            edges_stream.write(reinterpret_cast<const char*>(edges.data()),
+                               edges.size() * sizeof(decltype(ising)::field_t));
         }
     }
 

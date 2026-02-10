@@ -13,7 +13,7 @@
 #include "Field/Field.h"
 
 namespace ising {
-    template<typename L> using IsingField = Field<int8_t, L>;
+    template<typename L> using IsingField = lft::Field<int8_t, L>;
 
     template<typename L, typename RNG=std::mt19937_64>
     struct HeathBath {

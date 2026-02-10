@@ -11,6 +11,8 @@
 #include "Field/Field.h"
 #include "MonteCarlo/sweep.h"
 
+using namespace lft;
+
 template <typename F>
 struct MakeOne {
     typename F::lattice_t::size_t operator()(F &field, typename F::lattice_t::size_t site) {

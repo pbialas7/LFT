@@ -10,7 +10,7 @@
 #include "Field/Lattice.h"
 
 template<typename F, typename L>
-void extract_edges(const Field<F, L> &field, std::vector<F> &edge) {
+void extract_edges(const lft::Field<F, L> &field, std::vector<F> &edge) {
     using lattice_t = L;
     const lattice_t &lat = field.lat;
     static_assert(L::DIM == 2);

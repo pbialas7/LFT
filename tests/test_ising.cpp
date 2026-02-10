@@ -11,6 +11,8 @@
 #include "Ising/ising.h"
 
 
+using namespace lft;
+
 TEST_CASE("ising sweep", "[ising][sweep]") {
     const int Lx = 8;
     const int Ly = 8;

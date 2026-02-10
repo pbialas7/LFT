@@ -14,11 +14,11 @@
 
 namespace ea {
     template<typename L>
-    using SpinField = Field<int8_t, L>;
+    using SpinField = lft::Field<int8_t, L>;
     template<typename L>
-    using JLattice = Lattice<typename L::size_t, L::DIM + 1>;
+    using JLattice = lft::Lattice<typename L::index_t, L::DIM + 1>;
     template<typename L>
-    using JField = Field<double, JLattice<L> >;
+    using JField = lft::Field<double, JLattice<L> >;
 
     template<typename L, typename RNG=std::mt19937_64>
     struct HeathBath {
@@ -36,12 +36,12 @@ namespace ea {
         size_t operator()(field_class &field, size_t i) {
             double corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
-                corona += field[field.lat.up(i, d)] * j_[i + j_lat_.volumes[L::DIM] * d];
+                corona += field[field.lat.up(i, d)] * j_[i + j_lat_.n_elements * d];
             }
 
             for (auto d = 0; d < L::DIM; ++d) {
                 auto dn_site = field.lat.dn(i, d);
-                corona += field[dn_site] * j_[dn_site + j_lat_.volumes[L::DIM] * d];
+                corona += field[dn_site] * j_[dn_site + j_lat_.n_elements * d];
             }
             double p_up = std::exp(beta_ * corona) / (std::exp(beta_ * corona) + std::exp(-beta_ * corona));
 
@@ -73,7 +73,7 @@ namespace ea {
             double corona = 0.0;
             for (auto d = 0; d < F::DIM; ++d) {
                 auto i_up = field.lat.up(i, d);
-                auto j_up = j_[i + j_.lat.volumes[F::DIM] * d];
+                auto j_up = j_[i + j_.lat.n_elements * d];
                 auto s_up = field[i_up];
                 corona += s_up * j_up;
             }

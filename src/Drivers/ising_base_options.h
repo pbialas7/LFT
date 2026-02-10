@@ -25,8 +25,8 @@ public:
 
 
     double beta = 0.0;
-    int Lx = 0;
-    int Ly = 0;
+    uint32_t Lx = 0;
+    uint32_t Ly = 0;
     int save_freq = 0;
     int measure_freq = 0;
     int n_term = 0;

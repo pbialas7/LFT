@@ -9,7 +9,7 @@
 #include "Field/Field.h"
 
 namespace phi4 {
-    template<typename L> using ScalarField = Field<float, L>;
+    template<typename L> using ScalarField = lft::Field<float, L>;
     float inv_4factorial = 1.0 / 24.0;
 
 

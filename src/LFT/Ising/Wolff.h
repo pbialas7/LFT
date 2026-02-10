@@ -63,7 +63,7 @@ public:
 private:
     double beta_;
     F &field_;
-    Field<std::int8_t, lattice_t> cluster_;
+    lft::Field<std::int8_t, lattice_t> cluster_;
     rng_t &rng_;
     std::uniform_real_distribution<double> u;
     std::uniform_int_distribution<size_t> s;

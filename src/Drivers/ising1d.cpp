@@ -12,10 +12,9 @@
 #include "Ising/ising.h"
 #include "MonteCarlo/sweep.h"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     spdlog::default_logger()->set_level(spdlog::level::info);
-    int Lx = 0;
+    uint32_t Lx = 0;
     std::size_t n_sweeps = 0, n_term = 0;
     bool cold_start = false;
     double beta;
@@ -36,8 +35,7 @@ int main(int argc, char* argv[])
 
 
     auto results = cli.parse({argc, argv});
-    if (!results)
-    {
+    if (!results) {
         std::cerr << "Error in command line: " << results.message() << std::endl;
         return (1);
     }
@@ -47,7 +45,7 @@ int main(int argc, char* argv[])
     spdlog::info("Lx {}  beta {} n-sweeps {} seed {} cold-start {}", Lx, beta, n_sweeps, seed, cold_start);
 
 
-    using lattice_t = Lattice<uint32_t, 1>;
+    using lattice_t = lft::Lattice<uint32_t, 1>;
     lattice_t lat({Lx});
     ising::IsingField<lattice_t> ising(lat, 1);
     if (!cold_start)
@@ -55,8 +53,7 @@ int main(int argc, char* argv[])
 
     ising::HeathBath<lattice_t> update(beta, rng);
     spdlog::info("Starting termalisation");
-    for (std::size_t i = 0; i < n_term; i++)
-    {
+    for (std::size_t i = 0; i < n_term; i++) {
         sweep(ising, update);
     }
     spdlog::info("Finished termalisation");
@@ -65,13 +62,10 @@ int main(int argc, char* argv[])
     std::ofstream ofs(cfg_file_name, std::ios::trunc);
 
     spdlog::info("Starting ising");
-    for (std::size_t i = 0; i < n_sweeps; i++)
-    {
+    for (std::size_t i = 0; i < n_sweeps; i++) {
         sweep(ising, update);
-        if (cfg_save_freq > 0)
-        {
-            if ((i + 1) % cfg_save_freq == 0)
-            {
+        if (cfg_save_freq > 0) {
+            if ((i + 1) % cfg_save_freq == 0) {
                 for (int i = 0; i < ising.n_elements; i++)
                     ofs << int(ising[i]) << " ";
                 ofs << "\n";

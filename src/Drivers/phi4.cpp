@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     console->set_level(spdlog::level::debug);
 
 
-    int Lx = 0, Ly = 0;
+    uint32_t Lx = 0, Ly = 0;
     std::size_t n_sweeps = 0, n_term = 0;
     bool cold_start = false;
     double kappa = 1.0;
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
 
 
-    using lattice_t = Lattice<uint32_t>;
+    using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({Lx, Ly});
 
     using phi_t = phi4::ScalarField<lattice_t>;

@@ -83,4 +83,4 @@ add_executable(ea src/Drivers/ea.cpp
 target_link_libraries(ea PRIVATE lft lyra spdlog::spdlog)
 target_include_directories(ea PRIVATE src)
 
-add_custom_target(all_targets DEPENDS ising ising1d ising3d phi4 xy)
+add_custom_target(all_targets DEPENDS ising ising1d ising3d phi4 xy ea)

@@ -16,7 +16,7 @@
 int main(int argc, char *argv[]) {
 
 
-    int Lx = 0, Ly = 0, Lz = 0;
+    uint32_t Lx = 0, Ly = 0, Lz = 0;
     std::size_t n_sweeps = 0, n_term = 0;
     bool cold_start = false;
     double beta;
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
                   cold_start);
 
 
-    using lattice_t = Lattice<uint32_t, 3>;
+    using lattice_t = lft::Lattice<uint32_t, 3>;
     lattice_t lat({Lx, Ly, Lz});
     ising::IsingField<lattice_t> ising(lat, 1);
     if (!cold_start)

@@ -6,6 +6,8 @@
 
 #include "Field/Field.h"
 
+using namespace lft;
+
 TEST_CASE("Field Constructors", "[Field][Constructors]") {
     const int Lx = 8;
     const int Ly = 8;

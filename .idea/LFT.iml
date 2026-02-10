@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module classpath="CMake" type="CPP_MODULE" version="4">
+<module classpath="CIDR" type="CPP_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Python" name="Python facet">
-      <configuration sdkName="neumc" />
+      <configuration sdkName="$USER_HOME$/mambaforge/envs/dneumc" />
     </facet>
   </component>
 </module>

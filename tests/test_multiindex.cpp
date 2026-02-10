@@ -6,6 +6,8 @@
 
 #include "Field/Lattice.h"
 
+using namespace lft;
+
 TEST_CASE("MultiIndex constructors", "[Constructors] [MultiIndex]") {
     const int Lx = 8;
     const int Ly = 8;

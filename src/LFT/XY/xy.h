@@ -16,7 +16,7 @@ namespace xy {
     constexpr double M_2PI = 2*PI;
 
 
-    template<typename L> using ScalarField = Field<float, L>;
+    template<typename L> using ScalarField = lft::Field<float, L>;
 
     template<typename L, typename RNG=std::mt19937_64>
     struct Metropolis {
