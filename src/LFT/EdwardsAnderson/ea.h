@@ -12,15 +12,16 @@
 
 #include "Field/Field.h"
 
-namespace ea {
+namespace ea
+{
     template <typename L>
     using SpinField = lft::Field<int8_t, L>;
     template <typename L>
     using JLattice = lft::Lattice<typename L::index_t, L::DIM + 1>;
-    template <typename L>
-    using JField = lft::Field<double, JLattice<L>>;
+    template <typename F, typename L>
+    using JField = lft::Field<F, JLattice<L>>;
 
-    template <typename L, typename RNG=std::mt19937_64>
+    template <typename F, typename L, typename RNG=std::mt19937_64>
     struct HeathBath {
         using size_t = L::size_t;
         using index_t = L::index_t;
@@ -31,7 +32,7 @@ namespace ea {
         using rng_t = RNG;
 
 
-        HeathBath(double beta, rng_t& rng, const JField<L>& j) : beta_(beta), rng_(rng), j_(j), j_lat_(j.lat) {
+        HeathBath(double beta, rng_t& rng, const JField<F, L>& j) : beta_(beta), rng_(rng), j_(j), j_lat_(j.lat) {
         }
 
         size_t operator()(field_class& field, size_t i) {
@@ -60,7 +61,7 @@ namespace ea {
         double beta_;
         rng_t& rng_;
         std::uniform_real_distribution<double> u_;
-        JField<L> j_;
+        JField<F, L> j_;
         JLattice<L> j_lat_;
     };
 
@@ -76,7 +77,7 @@ namespace ea {
             double corona = 0.0;
             for (auto d = 0; d < F::DIM; ++d) {
                 auto i_up = field.lat.up(i, d);
-                auto j_up = j_[i + j_.lat.n_elements * d];
+                auto j_up = j_[i + field.lat.n_elements * d];
                 auto s_up = field[i_up];
                 corona += s_up * j_up;
             }

@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     ea::SpinField<lattice_t> spin_field(lat, 1);
 
     lft::Lattice<uint32_t, 3> j_lat({2,lat.dims[0], lat.dims[1]},'C');
-    auto j_field=lft::make_field(j_lat, 1.0);
+    auto j_field=lft::make_field(j_lat, 1.0f);
     if (!ising) {
         if (binary) {
             for (int i = 0; i < j_field.n_elements; ++i) {
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     j_file << j_field << "\n";
     j_file.close();
 
-    ea::HeathBath<lattice_t> update(base_options.beta, rng, j_field);
+    ea::HeathBath<float, lattice_t> update(base_options.beta, rng, j_field);
 
     for (int i = 0; i < base_options.n_term; ++i) {
         sweep(spin_field, update);
