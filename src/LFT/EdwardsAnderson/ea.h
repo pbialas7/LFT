@@ -86,4 +86,22 @@ namespace ea
 
         return -e;
     }
+
+
+    template <typename Float, typename F, typename JF>
+    Float energy_dn(const F& field, const JF& j_) {
+        Float e = 0.0;
+        for (int i = 0; i < field.n_elements; ++i) {
+            double corona = 0.0;
+            for (auto d = 0; d < F::DIM; ++d) {
+                auto i_dn = field.lat.dn(i, d);
+                auto j_dn = j_[i_dn + field.lat.n_elements * d];
+                auto s_dn = field[i_dn];
+                corona += s_dn * j_dn;
+            }
+            e += field[i] * corona;
+        }
+
+        return -e;
+    }
 }

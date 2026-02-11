@@ -81,6 +81,7 @@ int main(int argc, char *argv[]) {
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             if (em_stream_ptr) {
                 *em_stream_ptr << ea::energy<double>(spin_field, j_field) << " ";
+                *em_stream_ptr << ea::energy_dn<double>(spin_field, j_field) << " ";
                 *em_stream_ptr << ea::magnetisation<double>(spin_field) << "\n";
             }
         }
