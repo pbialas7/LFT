@@ -12,14 +12,36 @@
 
 #include "Field/Field.h"
 
-namespace ea
-{
+namespace ea {
     template <typename L>
     using SpinField = lft::Field<int8_t, L>;
     template <typename L>
     using JLattice = lft::Lattice<typename L::index_t, L::DIM + 1>;
     template <typename F, typename L>
     using JField = lft::Field<F, JLattice<L>>;
+
+
+    template <typename F, typename RNG>
+    void init_bernoulli(F& j_field, RNG& rng) {
+        std::bernoulli_distribution bern(0.5);
+        for (int i = 0; i < j_field.n_elements; ++i) {
+            if (bern(rng)) {
+                j_field[i] = 1;
+            }
+            else {
+                j_field[i] = -1;
+            }
+        }
+    }
+
+    template <typename F, typename RNG>
+    void init_gaussian(F& j_field, RNG& rng) {
+        std::normal_distribution<float> normal(0.0f, 1.0f);
+        for (int i = 0; i < j_field.n_elements; ++i) {
+            j_field[i] = normal(rng);
+        }
+    }
+
 
     template <typename F, typename L, typename RNG=std::mt19937_64>
     struct HeathBath {
@@ -103,5 +125,29 @@ namespace ea
         }
 
         return -e;
+    }
+
+    template <typename Float, typename F>
+    Float overlap(const F& f1, const F& f2) {
+        Float overlap_ = 0.0;
+        for (int i = 0; i < f1.n_elements; ++i) {
+            overlap_ += f1[i] * f2[i];
+        }
+        return overlap_ / f1.n_elements;
+    }
+
+    template <typename Float, typename F>
+    Float link_overlap(const F& field1, const F& field2) {
+        Float link_overlap_ = 0.0;
+        for (int i = 0; i < field1.n_elements; ++i) {
+            for (auto d = 0; d < F::DIM; ++d) {
+                auto i_up = field1.lat.up(i, d);
+                auto s_up1 = field1[i_up];
+                auto s_up2 = field2[i_up];
+                link_overlap_ += field1[i] * s_up1 * field2[i] * s_up2;
+            }
+        }
+
+        return -link_overlap_ / (field1.n_elements * F::DIM);
     }
 }

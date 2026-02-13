@@ -41,7 +41,11 @@ int main(int argc, char* argv[]) {
     std::normal_distribution<double> normal(0.0, 1.0);
     using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly}, 'C');
-    ea::SpinField<lattice_t> spin_field(lat, 1);
+    std::array<ea::SpinField<lattice_t>*, 2> replica;
+
+    replica[0] = new ea::SpinField<lattice_t>(lat, 1);
+    replica[1] = new ea::SpinField<lattice_t>(lat, 1);
+
 
     lft::Lattice<uint32_t, 3> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
     auto j_field = lft::make_field(j_lat, 1.0f);
@@ -60,7 +64,8 @@ int main(int argc, char* argv[]) {
     ea::HeathBath<float, lattice_t> update(base_options.beta, rng, j_field);
 
     for (int i = 0; i < base_options.n_term; ++i) {
-        sweep(spin_field, update);
+        sweep(*replica[0], update);
+        sweep(*replica[1], update);
     }
 
     auto* em_stream_ptr = otional_fstream_ptr(
@@ -72,21 +77,31 @@ int main(int argc, char* argv[]) {
 
 
     for (int i = 0; i < base_options.n_sweeps; ++i) {
-        sweep(spin_field, update);
+        sweep(*replica[0], update);
+        sweep(*replica[1], update);
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             if (em_stream_ptr) {
-                *em_stream_ptr << ea::energy<double>(spin_field, j_field) << " ";
-                *em_stream_ptr << ea::magnetisation<double>(spin_field) << "\n";
+                *em_stream_ptr << ea::energy<double>(*replica[0], j_field) << " ";
+                *em_stream_ptr << ea::magnetisation<double>(*replica[0]) << " ";
+                *em_stream_ptr << ea::energy<double>(*replica[1], j_field) << " ";
+                *em_stream_ptr << ea::magnetisation<double>(*replica[1]) << " ";
+                *em_stream_ptr << ea::overlap<double>(*replica[0], *replica[1]) << " ";
+                *em_stream_ptr << ea::link_overlap<double>(*replica[0], *replica[1]) << "\n";
                 (*em_stream_ptr).flush();
             }
         }
 
         if (base_options.save_freq > 0 && (i % base_options.save_freq) == 0) {
             if (cfg_stream_ptr) {
-                spin_field.write(*cfg_stream_ptr);
+                replica[0]->write(*cfg_stream_ptr);
+                replica[1]->write(*cfg_stream_ptr);
             }
         }
     }
+
+    delete replica[0];
+    delete replica[1];
+
     if (em_stream_ptr)
         delete em_stream_ptr;
     if (cfg_stream_ptr)
