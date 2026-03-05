@@ -1,0 +1,84 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.19.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+```
+
+```{python}
+import sys
+sys.path.append('../..')
+```
+
+```{python}
+from stats_utils import ac_and_tau_int
+```
+
+```{python}
+em = np.loadtxt('data/em_64x64_J_a_b0300.txt')
+```
+
+```{python}
+em.shape
+```
+
+```{python}
+plt.plot(em[:5000,1]); 
+```
+
+```{python}
+tau, ac = ac_and_tau_int(em[:50000,1])
+print(tau)
+```
+
+```{python}
+tau, ac = ac_and_tau_int(em[50000:,1])
+print(tau)
+```
+
+```{python}
+tau, ac = ac_and_tau_int(em[:,0])
+print(tau)
+```
+
+```{python}
+def hist_int(a,*,bin_width,**kwargs):
+    a_min = a.min()
+    a_max = a.max()
+    bins = int(round(a_max-a_min)/bin_width)+1
+    return plt.hist(a,bins=bins, range=(a_min-bin_width/2, a_max+bin_width/2), **kwargs )
+```
+
+```{python}
+counts, bins,_ = hist_int(em[:,1], bin_width=4, histtype='step')
+hist_int(em[:,3], bin_width=4, histtype='step');
+```
+
+```{python}
+hist_int(em[:,0], bin_width=4, histtype='step'); 
+hist_int(em[:,2], bin_width=4, histtype='step'); 
+```
+
+```{python}
+plt.hist(em[:,4], bins=50);
+```
+
+```{python}
+em.mean(0)
+```
+
+```{python}
+
+```
