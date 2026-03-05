@@ -21,12 +21,14 @@ int main(int argc, char* argv[]) {
     bool ising = false;
     bool binary = false;
     bool two_replicas = false;
+    std::string j_file_path;
 
 
     base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("configuration save frequency");
     base_options.cli |= lyra::opt(ising)["--ising"]("Set J = 1");
-    base_options.cli |= lyra::opt(binary)["--binary"]("Sets J =+/-1");
+    base_options.cli |= lyra::opt(binary)["--binary"]("Sets J = +/-1");
     base_options.cli |= lyra::opt(two_replicas)["-q"]["--two-replicas"]("Simulates two replicas.");
+    base_options.cli |= lyra::opt(j_file_path, "J file")["-j"]["--j-file"]("Fiole with link variables");
 
     auto results = base_options.cli.parse({argc, argv});
     if (!results) {
@@ -37,19 +39,20 @@ int main(int argc, char* argv[]) {
     spdlog::info("Lx {} Ly {}", base_options.Lx, base_options.Ly);
 
     std::mt19937_64 rng(base_options.seed);
-    std::bernoulli_distribution bern(0.5);
-    std::normal_distribution<double> normal(0.0, 1.0);
+
     using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly}, 'C');
     ea::SpinField<lattice_t> spin_field(lat, 1);
 
     lft::Lattice<uint32_t, 3> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
     auto j_field = lft::make_field(j_lat, 1.0f);
-    if (!ising) {
-        if (binary)
-            ea::init_bernoulli(j_field, rng);
-        else
-            ea::init_gaussian(j_field, rng);
+    if (j_file_path.empty()) {
+        if (!ising) {
+            if (binary)
+                ea::init_bernoulli(j_field, rng);
+            else
+                ea::init_gaussian(j_field, rng);
+        }
     }
 
     auto j_path = make_file_path(base_options.data_dir, "j", base_options.name, "txt");

@@ -75,7 +75,7 @@ namespace lft {
 
         friend std::ostream& operator<<(std::ostream& out, const Field& field) {
             for (auto d = 0; d < field.n_elements; ++d) {
-                out << field[d] << " ";
+                out << field[d] << "\n";
             }
             return out;
         }

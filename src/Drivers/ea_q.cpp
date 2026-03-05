@@ -21,18 +21,24 @@ int main(int argc, char* argv[]) {
     bool ising = false;
     bool binary = false;
     bool two_replicas = false;
-
+    std::string j_file_path;
+    int n_replicas = 1;
 
     base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("configuration save frequency");
     base_options.cli |= lyra::opt(ising)["--ising"]("Set J = 1");
     base_options.cli |= lyra::opt(binary)["--binary"]("Sets J =+/-1");
     base_options.cli |= lyra::opt(two_replicas)["-q"]["--two-replicas"]("Simulates two replicas.");
+    base_options.cli |= lyra::opt(j_file_path, "J file")["-j"]["--j-file"]("Fiole with link variables");
+
 
     auto results = base_options.cli.parse({argc, argv});
     if (!results) {
         std::cerr << "Error in command line: " << results.message() << std::endl;
         return 1;
     }
+
+    if (two_replicas)
+        n_replicas = 2;
 
     spdlog::info("Lx {} Ly {}", base_options.Lx, base_options.Ly);
 
@@ -43,17 +49,30 @@ int main(int argc, char* argv[]) {
     lattice_t lat({base_options.Lx, base_options.Ly}, 'C');
     std::array<ea::SpinField<lattice_t>*, 2> replica;
 
-    replica[0] = new ea::SpinField<lattice_t>(lat, 1);
-    replica[1] = new ea::SpinField<lattice_t>(lat, 1);
+    for (int j = 0; j < n_replicas; ++j) {
+        replica[j] = new ea::SpinField<lattice_t>(lat, 1);
+    }
 
 
     lft::Lattice<uint32_t, 3> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
     auto j_field = lft::make_field(j_lat, 1.0f);
-    if (!ising) {
-        if (binary)
-            ea::init_bernoulli(j_field, rng);
-        else
-            ea::init_gaussian(j_field, rng);
+    if (j_file_path.empty()) {
+        if (!ising) {
+            if (binary)
+                ea::init_bernoulli(j_field, rng);
+            else
+                ea::init_gaussian(j_field, rng);
+        }
+    }
+    else {
+        std::ifstream ifs(j_file_path, std::ios::in);
+        if (!ifs) {
+            spdlog::error("Error opening J file : {}", j_file_path);
+            exit(1);
+        }
+        for (std::size_t i = 0; i < j_lat.n_elements; ++i) {
+            ifs >> j_field[i];
+        }
     }
 
     auto j_path = make_file_path(base_options.data_dir, "j", base_options.name, "txt");
@@ -64,8 +83,9 @@ int main(int argc, char* argv[]) {
     ea::HeathBath<float, lattice_t> update(base_options.beta, rng, j_field);
 
     for (int i = 0; i < base_options.n_term; ++i) {
-        sweep(*replica[0], update);
-        sweep(*replica[1], update);
+        for (int j = 0; j < n_replicas; ++j) {
+            sweep(*replica[j], update);
+        }
     }
 
     auto* em_stream_ptr = otional_fstream_ptr(
@@ -77,30 +97,37 @@ int main(int argc, char* argv[]) {
 
 
     for (int i = 0; i < base_options.n_sweeps; ++i) {
-        sweep(*replica[0], update);
-        sweep(*replica[1], update);
+        for (int j = 0; j < n_replicas; ++j) {
+            sweep(*replica[j], update);
+        }
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             if (em_stream_ptr) {
-                *em_stream_ptr << ea::energy<double>(*replica[0], j_field) << " ";
-                *em_stream_ptr << ea::magnetisation<double>(*replica[0]) << " ";
-                *em_stream_ptr << ea::energy<double>(*replica[1], j_field) << " ";
-                *em_stream_ptr << ea::magnetisation<double>(*replica[1]) << " ";
-                *em_stream_ptr << ea::overlap<double>(*replica[0], *replica[1]) << " ";
-                *em_stream_ptr << ea::link_overlap<double>(*replica[0], *replica[1]) << "\n";
-                (*em_stream_ptr).flush();
+                for (int j = 0; j < n_replicas; ++j) {
+                    *em_stream_ptr << ea::energy<double>(*replica[j], j_field) << " ";
+                    *em_stream_ptr << ea::magnetisation<double>(*replica[j]) << " ";
+                }
+                if (two_replicas) {
+                    *em_stream_ptr << ea::overlap<double>(*replica[0], *replica[1]) << " ";
+                    *em_stream_ptr << ea::link_overlap<double>(*replica[0], *replica[1]) << "\n";
+                }
+                else
+                    *em_stream_ptr << "\n";
+                em_stream_ptr->flush();
             }
         }
 
         if (base_options.save_freq > 0 && (i % base_options.save_freq) == 0) {
             if (cfg_stream_ptr) {
-                replica[0]->write(*cfg_stream_ptr);
-                replica[1]->write(*cfg_stream_ptr);
+                for (int j = 0; j < n_replicas; ++j) {
+                    replica[j]->write(*cfg_stream_ptr);
+                }
             }
         }
     }
 
-    delete replica[0];
-    delete replica[1];
+    for (int j = 0; j < n_replicas; ++j) {
+        delete replica[j];
+    }
 
     if (em_stream_ptr)
         delete em_stream_ptr;
