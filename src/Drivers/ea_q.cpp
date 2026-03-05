@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     std::string j_file_path;
     int n_replicas = 1;
 
-    base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("configuration save frequency");
+    base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measure save frequency");
     base_options.cli |= lyra::opt(ising)["--ising"]("Set J = 1");
     base_options.cli |= lyra::opt(binary)["--binary"]("Sets J =+/-1");
     base_options.cli |= lyra::opt(two_replicas)["-q"]["--two-replicas"]("Simulates two replicas.");
@@ -71,7 +71,12 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
         for (std::size_t i = 0; i < j_lat.n_elements; ++i) {
-            ifs >> j_field[i];
+            float val = 7.0;
+            if (!(ifs >> val)) {
+                spdlog::error("J file  {} too short at {}", j_file_path, i);
+                exit(1);
+            }
+            j_field[i] = val;
         }
     }
 

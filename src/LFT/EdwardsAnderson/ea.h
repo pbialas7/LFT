@@ -89,7 +89,7 @@ namespace ea {
 
     template <typename Float, typename F>
     Float magnetisation(const F& f) {
-        return mean<Float>(f);
+        return sum<Float>(f);
     }
 
     template <typename Float, typename F, typename JF>
