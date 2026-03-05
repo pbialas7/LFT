@@ -6,6 +6,7 @@ cmake-build-release/
 __pycache__/
 
 data/
+copilot.data.migration.ask.xml
 
 **/.ipynb_checkpoints/
 ea/

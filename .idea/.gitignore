@@ -10,3 +10,4 @@
 /copilot/chatSessions
 # GitHub Copilot persisted chat sessions
 /copilot/chatSessions
+/copilot*

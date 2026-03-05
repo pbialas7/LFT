@@ -73,15 +73,6 @@ target_link_libraries(phi4 PRIVATE lft lyra spdlog::spdlog)
 add_executable(xy src/Drivers/xy.cpp src/LFT/XY/xy.h)
 target_link_libraries(xy PRIVATE lft lyra spdlog::spdlog)
 
-add_executable(ea src/Drivers/ea.cpp
-        src/LFT/EdwardsAnderson/ea.h
-        src/Drivers/ising_base_options.cpp
-        src/Drivers/ising_base_options.h
-        src/utils/fs.h
-        src/utils/fs.cpp
-)
-target_link_libraries(ea PRIVATE lft lyra spdlog::spdlog)
-target_include_directories(ea PRIVATE src)
 
 add_executable(ea_q src/Drivers/ea_q.cpp
         src/LFT/EdwardsAnderson/ea.h
