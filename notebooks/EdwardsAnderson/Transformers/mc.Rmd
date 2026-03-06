@@ -27,10 +27,11 @@ from stats_utils import ac_and_tau_int
 ```
 
 ```{python}
-em = np.loadtxt('data/em_64x64_J_a_b0300.txt')
+20e6/400
 ```
 
 ```{python}
+em = np.loadtxt('data/em_64x64_J_a_b0900_b.txt')
 em.shape
 ```
 
@@ -39,13 +40,17 @@ plt.plot(em[:5000,1]);
 ```
 
 ```{python}
-tau, ac = ac_and_tau_int(em[:50000,1])
+tau, ac = ac_and_tau_int(em[:,1])
 print(tau)
 ```
 
 ```{python}
-tau, ac = ac_and_tau_int(em[50000:,1])
+tau, ac = ac_and_tau_int(em[25000:,1])
 print(tau)
+```
+
+```{python}
+plt.plot(ac);
 ```
 
 ```{python}
@@ -72,7 +77,7 @@ hist_int(em[:,2], bin_width=4, histtype='step');
 ```
 
 ```{python}
-plt.hist(em[:,4], bins=50);
+plt.hist(em[:,4], bins=50, histtype='step');
 ```
 
 ```{python}
