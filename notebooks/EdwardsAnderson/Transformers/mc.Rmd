@@ -27,26 +27,29 @@ from stats_utils import ac_and_tau_int
 ```
 
 ```{python}
-20e6/400
+bs = ['0100','0345', '0590', '1080','1570','3040']
 ```
 
 ```{python}
-em = np.loadtxt('data/em_64x64_J_a_b0900_b.txt')
+for b_ in bs:
+    em = np.loadtxt(f'data/em_16x16_J_a_b{b_}.txt')
+    beta = int(b_)/1000.0
+    print(f"{beta:6.3f} {np.abs(em[:,1]).mean()/(16*16):.4f}")
+```
+
+```{python}
+em = np.loadtxt('data/em_16x16_J_a_b3040.txt')
 em.shape
 ```
 
 ```{python}
-plt.plot(em[:5000,1]); 
+plt.plot(em[::10000,1]); 
 ```
 
 ```{python}
-tau, ac = ac_and_tau_int(em[:,1])
-print(tau)
-```
-
-```{python}
-tau, ac = ac_and_tau_int(em[25000:,1])
-print(tau)
+d = 10000
+tau, ac = ac_and_tau_int(em[::d,1])
+print(tau, tau*5*d)
 ```
 
 ```{python}
@@ -54,8 +57,17 @@ plt.plot(ac);
 ```
 
 ```{python}
+tau, ac = ac_and_tau_int(em[200000:,1])
+print(tau)
+```
+
+```{python}
 tau, ac = ac_and_tau_int(em[:,0])
 print(tau)
+```
+
+```{python}
+np.abs(em[:,3]).mean()/(16*16)
 ```
 
 ```{python}
@@ -68,7 +80,7 @@ def hist_int(a,*,bin_width,**kwargs):
 
 ```{python}
 counts, bins,_ = hist_int(em[:,1], bin_width=4, histtype='step')
-hist_int(em[:,3], bin_width=4, histtype='step');
+#hist_int(em[:,3], bin_width=4, histtype='step');
 ```
 
 ```{python}
@@ -82,6 +94,10 @@ plt.hist(em[:,4], bins=50, histtype='step');
 
 ```{python}
 em.mean(0)
+```
+
+```{python}
+
 ```
 
 ```{python}
