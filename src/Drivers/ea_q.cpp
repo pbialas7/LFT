@@ -4,7 +4,10 @@
 
 #include <fstream>
 #include <filesystem>
+
 namespace fs = std::filesystem;
+
+#include <omp.h>
 
 #include <Field/Lattice.h>
 
@@ -15,6 +18,12 @@ namespace fs = std::filesystem;
 
 
 int main(int argc, char* argv[]) {
+
+    auto max_threads = omp_get_max_threads();
+
+    std::cout << "Number of threads: " << max_threads << std::endl;
+    omp_set_num_threads(max_threads/2);
+
     IsingBaseOptions base_options;
 
     int meas_freq = 0;
