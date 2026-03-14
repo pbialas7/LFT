@@ -36,39 +36,36 @@ from dneumc.ising.ea import Energy
 ```
 
 ```{python}
-ea_dir = '../../../LFT/ea'
+from neumc.utils.stats_utils import bootstrap, ac_and_tau_int, torch_bootstrap
 ```
 
 ```{python}
-L = 4
+ea_dir = 'data'
 ```
 
 ```{python}
-spins = fast_gen_states(16).view(-1,L,L)
+Lx = 4
+Ly = 4
 ```
 
 ```{python}
-J = torch.ones(2,L,L)
+spins = fast_gen_states(Lx*Ly).view(-1,Lx,Ly)
 ```
 
 ```{python}
-Energy(spins,J)
+name ='4x4_b0900_x_t4'
 ```
 
 ```{python}
-name ='4x4_b02000_gauss'
+beta = 0.9
 ```
 
 ```{python}
-beta = 0.2
+cfgs = torch.from_numpy(np.fromfile(f"{ea_dir}/cfg_{name}.bin", dtype="int8").reshape(-1,Lx,Ly))
 ```
 
 ```{python}
-cfgs = torch.from_numpy(np.fromfile(f"{ea_dir}/cfg_{name}.bin", dtype="int8").reshape(-1,4,4))
-```
-
-```{python}
-J = torch.from_numpy(np.loadtxt(f"{ea_dir}/j_{name}.txt").reshape(2,4,4))
+J = torch.from_numpy(np.loadtxt(f"{ea_dir}/j_{name}.txt").reshape(2,Lx,Ly))
 ```
 
 ```{python}
@@ -84,11 +81,12 @@ em.shape
 ```
 
 ```{python}
-torch.max(torch.abs(em[:,0]-em[:,1]))
+torch.abs(em[:,0] - Energy(cfgs,J)).max()
 ```
 
 ```{python}
-torch.abs(em[:,0] - Energy(cfgs,J)).max()
+tau, ac = ac_and_tau_int(em[:,1].numpy());
+tau 
 ```
 
 ```{python}
@@ -100,27 +98,23 @@ energy
 ```
 
 ```{python}
-plt.hist(energy,bins=50);
-```
-
-```{python}
 Z = torch.exp(-beta*energy).sum()
 ```
 
 ```{python}
-Z
+e_th= torch.sum(energy*torch.exp(-beta*energy))/Z
 ```
 
 ```{python}
-torch.sum(energy*torch.exp(-beta*energy))/Z
+m_e, err_e = torch_bootstrap(em[:,0],n_samples=100, binsize=1)
 ```
 
 ```{python}
-em[:,0].std()/np.sqrt(len(em))
+em[:,0].mean()-e_th
 ```
 
 ```{python}
-em[:,0].mean()
+err_e
 ```
 
 ```{python}

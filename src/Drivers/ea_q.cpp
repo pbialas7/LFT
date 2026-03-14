@@ -3,8 +3,8 @@
 //
 
 #include <fstream>
+#include <chrono>
 #include <filesystem>
-
 namespace fs = std::filesystem;
 
 #include <omp.h>
@@ -18,11 +18,10 @@ namespace fs = std::filesystem;
 
 
 int main(int argc, char* argv[]) {
-
     auto max_threads = omp_get_max_threads();
 
-    std::cout << "Number of threads: " << max_threads << std::endl;
-    omp_set_num_threads(max_threads/2);
+    spdlog::info("Max number of threads = {}", max_threads);
+
 
     IsingBaseOptions base_options;
 
@@ -32,12 +31,14 @@ int main(int argc, char* argv[]) {
     bool two_replicas = false;
     std::string j_file_path;
     int n_replicas = 1;
+    int n_threads = max_threads;
 
     base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measure save frequency");
     base_options.cli |= lyra::opt(ising)["--ising"]("Set J = 1");
     base_options.cli |= lyra::opt(binary)["--binary"]("Sets J =+/-1");
     base_options.cli |= lyra::opt(two_replicas)["-q"]["--two-replicas"]("Simulates two replicas.");
     base_options.cli |= lyra::opt(j_file_path, "J file")["-j"]["--j-file"]("Fiole with link variables");
+    base_options.cli |= lyra::opt(n_threads, "N threads")["--n-threads"]("Set number of threads to use");
 
 
     auto results = base_options.cli.parse({argc, argv});
@@ -45,7 +46,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error in command line: " << results.message() << std::endl;
         return 1;
     }
-
+    omp_set_num_threads(n_threads);
     if (two_replicas)
         n_replicas = 2;
 
@@ -96,11 +97,15 @@ int main(int argc, char* argv[]) {
 
     ea::HeathBath<float, lattice_t> update(base_options.beta, rng, j_field);
 
+    auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_term; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             sweep(*replica[j], update);
         }
     }
+    auto end_term = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
+    spdlog::info("Thermalisation took {:.3} seconds", elapsed_term_seconds.count());
 
     auto* em_stream_ptr = otional_fstream_ptr(
         make_file_path(base_options.data_dir, "em", base_options.name, "txt"),
@@ -110,6 +115,7 @@ int main(int argc, char* argv[]) {
         base_options.save_freq > 0, std::ios::out | std::ios::binary);
 
 
+    auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_sweeps; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             sweep(*replica[j], update);
@@ -138,6 +144,9 @@ int main(int argc, char* argv[]) {
             }
         }
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    spdlog::info("Sweeps took {:.3} seconds", elapsed_seconds.count());
 
     for (int j = 0; j < n_replicas; ++j) {
         delete replica[j];

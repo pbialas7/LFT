@@ -5,6 +5,7 @@ include(FetchContent)
 include(ExternalProject)
 
 set(CMAKE_CXX_STANDARD 20)
+add_compile_options(-O3 -ffast-math)
 
 FetchContent_Declare(
         spdlog
@@ -39,6 +40,14 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(glm)
+
+if (APPLE)
+    if(EXISTS "/opt/homebrew/opt/libomp") # Apple Silicon
+        set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
+    elseif(EXISTS "/usr/local/opt/libomp") # Intel Mac
+        set(OpenMP_ROOT "/usr/local/opt/libomp")
+    endif()
+endif()
 
 find_package(OpenMP REQUIRED)
 
