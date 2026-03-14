@@ -45,7 +45,7 @@ ea_dir = 'data'
 
 ```{python}
 Lx = 4
-Ly = 4
+Ly = 6
 ```
 
 ```{python}
@@ -53,7 +53,7 @@ spins = fast_gen_states(Lx*Ly).view(-1,Lx,Ly)
 ```
 
 ```{python}
-name ='4x4_b0900_x_t4'
+name =f'{Lx}x{Ly}_b0900_x'
 ```
 
 ```{python}
