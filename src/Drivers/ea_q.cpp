@@ -11,13 +11,15 @@ namespace fs = std::filesystem;
 
 #include <Field/Lattice.h>
 
+#include "utils/rand.h"
+
 #include "MonteCarlo/sweep.h"
 #include "EdwardsAnderson/ea.h"
 #include "utils/fs.h"
 #include "ising_base_options.h"
 
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     auto max_threads = omp_get_max_threads();
 
     spdlog::info("Max number of threads = {}", max_threads);
@@ -52,12 +54,21 @@ int main(int argc, char* argv[]) {
 
     spdlog::info("Lx {} Ly {}", base_options.Lx, base_options.Ly);
 
-    std::mt19937_64 rng(base_options.seed);
+    lft::rand::taus_array taus_rng(max_threads);
+    taus_rng.gen_seeds(base_options.seed);
+
+#if 0
+    using rng_t = std::mt19937_64;
+    rng_t rng(base_options.seed);
+#else
+    using rng_t = lft::rand::taus_array::taus;
+    auto rng = taus_rng[3];
+#endif
     std::bernoulli_distribution bern(0.5);
     std::normal_distribution<double> normal(0.0, 1.0);
     using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly}, 'C');
-    std::array<ea::SpinField<lattice_t>*, 2> replica;
+    std::array<ea::SpinField<lattice_t> *, 2> replica;
 
     for (int j = 0; j < n_replicas; ++j) {
         replica[j] = new ea::SpinField<lattice_t>(lat, 1);
@@ -73,8 +84,7 @@ int main(int argc, char* argv[]) {
             else
                 ea::init_gaussian(j_field, rng);
         }
-    }
-    else {
+    } else {
         std::ifstream ifs(j_file_path, std::ios::in);
         if (!ifs) {
             spdlog::error("Error opening J file : {}", j_file_path);
@@ -95,19 +105,19 @@ int main(int argc, char* argv[]) {
     j_file << j_field << "\n";
     j_file.close();
 
-    ea::HeathBath<float, lattice_t> update(base_options.beta, rng, j_field);
+    ea::HeathBath<float, lattice_t, rng_t> update(base_options.beta, rng, j_field);
 
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_term; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
-            sweep_mt(*replica[j], update);
+            sweep_mt(*replica[j], update, taus_rng);
         }
     }
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
     spdlog::info("Thermalisation took {:.3} seconds", elapsed_term_seconds.count());
 
-    auto* em_stream_ptr = otional_fstream_ptr(
+    auto *em_stream_ptr = otional_fstream_ptr(
         make_file_path(base_options.data_dir, "em", base_options.name, "txt"),
         meas_freq > 0, std::fstream::out);
     auto cfg_stream_ptr = otional_fstream_ptr(
@@ -118,7 +128,7 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_sweeps; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
-            sweep_mt(*replica[j], update);
+            sweep_mt(*replica[j], update, taus_rng);
         }
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             if (em_stream_ptr) {
@@ -129,8 +139,7 @@ int main(int argc, char* argv[]) {
                 if (two_replicas) {
                     *em_stream_ptr << ea::overlap<double>(*replica[0], *replica[1]) << " ";
                     *em_stream_ptr << ea::link_overlap<double>(*replica[0], *replica[1]) << "\n";
-                }
-                else
+                } else
                     *em_stream_ptr << "\n";
                 em_stream_ptr->flush();
             }

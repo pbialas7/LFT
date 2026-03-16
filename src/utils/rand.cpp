@@ -3,3 +3,7 @@
 //
 
 #include "rand.h"
+
+namespace lft::rand {
+    taus_array *taus_array::generator_;
+}

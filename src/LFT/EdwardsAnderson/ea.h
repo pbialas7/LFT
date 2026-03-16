@@ -42,7 +42,7 @@ namespace ea {
     }
 
 
-    template<typename F, typename L, typename RNG=std::mt19937_64>
+    template<typename F, typename L, typename RNG>
     struct HeathBath {
         using size_t = L::size_t;
         using index_t = L::index_t;
@@ -71,7 +71,7 @@ namespace ea {
             }
             double p_up = std::exp(beta_ * corona) / (std::exp(beta_ * corona) + std::exp(-beta_ * corona));
 
-            auto r = u_(rng_);
+            auto r = u_(rng);
             if (r < p_up)
                 field[i] = 1;
             else
