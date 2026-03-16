@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.19.1
+      jupytext_version: 1.18.1
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -23,51 +23,58 @@ sys.path.append('../..')
 ```
 
 ```{python}
-from stats_utils import ac_and_tau_int
+from neumc.utils.stats_utils import bootstrap
 ```
 
 ```{python}
-bs = ['0100','0345', '0590', '1080','1570','3040']
+from stats_utils import ac_and_tau_int, tor
+```
+
+```{python}
+bs = ['0100','0345', '0590', '0835', '1080','1570','3040']
 ```
 
 ```{python}
 for b_ in bs:
-    em = np.loadtxt(f'data/em_16x16_J_a_b{b_}.txt')
+  try:
+    em = np.loadtxt(f'data/em_16x16_J_a_b{b_}_y.txt')
     beta = int(b_)/1000.0
     print(f"{beta:6.3f} {np.abs(em[:,1]).mean()/(16*16):.4f}")
+  except:
+    pass
 ```
 
 ```{python}
-em = np.loadtxt('data/em_16x16_J_a_b3040.txt')
+em = np.loadtxt('data/em_16x16_J_a_b3040_z.txt')
 em.shape
 ```
 
 ```{python}
-plt.plot(em[::10000,1]); 
+d=40
+plt.plot(em[::d,1]); 
 ```
 
 ```{python}
-d = 10000
+d=500
 tau, ac = ac_and_tau_int(em[::d,1])
-print(tau, tau*5*d)
+print(tau, tau*d)
 ```
 
 ```{python}
-plt.plot(ac);
+plt.scatter(np.arange(len(ac)),ac);
 ```
 
 ```{python}
-tau, ac = ac_and_tau_int(em[200000:,1])
-print(tau)
+np.abs(em[:,1]).mean()/(16*16)
 ```
 
 ```{python}
-tau, ac = ac_and_tau_int(em[:,0])
-print(tau)
+mean, err = bootstrap(np.abs(em[::d,1])/(256), n_samples=100, binsize=1)
+print(f"{mean:.5f} {err:.5f}")
 ```
 
 ```{python}
-np.abs(em[:,3]).mean()/(16*16)
+
 ```
 
 ```{python}
@@ -84,11 +91,6 @@ counts, bins,_ = hist_int(em[:,1], bin_width=4, histtype='step')
 ```
 
 ```{python}
-hist_int(em[:,0], bin_width=4, histtype='step'); 
-hist_int(em[:,2], bin_width=4, histtype='step'); 
-```
-
-```{python}
 plt.hist(em[:,4], bins=50, histtype='step');
 ```
 
@@ -97,7 +99,15 @@ em.mean(0)
 ```
 
 ```{python}
+comp_data = np.loadtxt('comparison.txt')
+```
 
+```{python}
+plt.errorbar(comp_data[:,0],comp_data[:,1], yerr=comp_data[:,2],fmt='o', label='PK'); 
+plt.errorbar(comp_data[:,0],comp_data[:,3], yerr=comp_data[:,4],fmt='o',label='PB'); 
+plt.xlabel('$\\beta$')
+plt.ylabel('$\\langle|m|\\rangle$', rotation=True)
+plt.savefig('comparison.pdf')
 ```
 
 ```{python}

@@ -53,7 +53,7 @@ spins = fast_gen_states(Lx*Ly).view(-1,Lx,Ly)
 ```
 
 ```{python}
-name =f'{Lx}x{Ly}_b0900_x'
+name =f'{Lx}x{Ly}_b0900_x_s319751_t1'
 ```
 
 ```{python}
@@ -94,10 +94,6 @@ energy = Energy(spins,J)
 ```
 
 ```{python}
-energy
-```
-
-```{python}
 Z = torch.exp(-beta*energy).sum()
 ```
 
@@ -106,7 +102,8 @@ e_th= torch.sum(energy*torch.exp(-beta*energy))/Z
 ```
 
 ```{python}
-m_e, err_e = torch_bootstrap(em[:,0],n_samples=100, binsize=1)
+m_e, err_e = torch_bootstrap(em[:,0],n_samples=100, binsize=10)
+print(m_e, err_e)
 ```
 
 ```{python}
@@ -115,6 +112,34 @@ em[:,0].mean()-e_th
 
 ```{python}
 err_e
+```
+
+```{python}
+(m_e-e_th)/err_e
+```
+
+```{python}
+mag = spins.sum((-1,-2))
+```
+
+```{python}
+mag
+```
+
+```{python}
+amag_th = torch.sum(torch.abs(mag)*torch.exp(-beta*energy))/Z
+```
+
+```{python}
+amag_th/(Lx*Ly)
+```
+
+```{python}
+torch.abs(em[:,1]).mean()/(Lx*Ly)
+```
+
+```{python}
+torch_bootstrap(torch.abs(em[:,1])/(Lx*Ly), n_samples=100, binsize=2)
 ```
 
 ```{python}
