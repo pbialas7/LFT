@@ -90,6 +90,8 @@ add_executable(ea_q src/Drivers/ea_q.cpp
         src/Drivers/ising_base_options.h
         src/utils/fs.h
         src/utils/fs.cpp
+        src/utils/rand.cpp
+        src/utils/rand.h
 )
 target_link_libraries(ea_q PRIVATE lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
 target_include_directories(ea_q PRIVATE src)

@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_term; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
-            sweep(*replica[j], update);
+            sweep_mt(*replica[j], update);
         }
     }
     auto end_term = std::chrono::high_resolution_clock::now();
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_sweeps; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
-            sweep(*replica[j], update);
+            sweep_mt(*replica[j], update);
         }
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             if (em_stream_ptr) {

@@ -13,29 +13,28 @@
 #include "Field/Field.h"
 
 namespace ea {
-    template <typename L>
+    template<typename L>
     using SpinField = lft::Field<int8_t, L>;
-    template <typename L>
+    template<typename L>
     using JLattice = lft::Lattice<typename L::index_t, L::DIM + 1>;
-    template <typename F, typename L>
-    using JField = lft::Field<F, JLattice<L>>;
+    template<typename F, typename L>
+    using JField = lft::Field<F, JLattice<L> >;
 
 
-    template <typename F, typename RNG>
-    void init_bernoulli(F& j_field, RNG& rng) {
+    template<typename F, typename RNG>
+    void init_bernoulli(F &j_field, RNG &rng) {
         std::bernoulli_distribution bern(0.5);
         for (int i = 0; i < j_field.n_elements; ++i) {
             if (bern(rng)) {
                 j_field[i] = 1;
-            }
-            else {
+            } else {
                 j_field[i] = -1;
             }
         }
     }
 
-    template <typename F, typename RNG>
-    void init_gaussian(F& j_field, RNG& rng) {
+    template<typename F, typename RNG>
+    void init_gaussian(F &j_field, RNG &rng) {
         std::normal_distribution<float> normal(0.0f, 1.0f);
         for (int i = 0; i < j_field.n_elements; ++i) {
             j_field[i] = normal(rng);
@@ -43,7 +42,7 @@ namespace ea {
     }
 
 
-    template <typename F, typename L, typename RNG=std::mt19937_64>
+    template<typename F, typename L, typename RNG=std::mt19937_64>
     struct HeathBath {
         using size_t = L::size_t;
         using index_t = L::index_t;
@@ -54,10 +53,11 @@ namespace ea {
         using rng_t = RNG;
 
 
-        HeathBath(double beta, rng_t& rng, const JField<F, L>& j) : beta_(beta), rng_(rng), j_(j), j_lat_(j.lat) {
+        HeathBath(double beta, rng_t &rng, const JField<F, L> &j) : beta_(beta), rng_(rng), j_(j), j_lat_(j.lat) {
         }
 
-        size_t operator()(field_class& field, size_t i) {
+        template<typename R>
+        size_t operator()(field_class &field, size_t i, R &rng) {
             double corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
                 auto idx = i + field.lat.n_elements * d;
@@ -79,21 +79,26 @@ namespace ea {
             return 1;
         }
 
+
+        size_t operator()(field_class &field, size_t i) {
+            return this->operator()(field, i, rng_);
+        }
+
     private:
         double beta_;
-        rng_t& rng_;
+        rng_t &rng_;
         std::uniform_real_distribution<double> u_;
         JField<F, L> j_;
         JLattice<L> j_lat_;
     };
 
-    template <typename Float, typename F>
-    Float magnetisation(const F& f) {
+    template<typename Float, typename F>
+    Float magnetisation(const F &f) {
         return sum<Float>(f);
     }
 
-    template <typename Float, typename F, typename JF>
-    Float energy(const F& field, const JF& j_) {
+    template<typename Float, typename F, typename JF>
+    Float energy(const F &field, const JF &j_) {
         Float e = 0.0;
         for (int i = 0; i < field.n_elements; ++i) {
             double corona = 0.0;
@@ -110,8 +115,8 @@ namespace ea {
     }
 
 
-    template <typename Float, typename F, typename JF>
-    Float energy_dn(const F& field, const JF& j_) {
+    template<typename Float, typename F, typename JF>
+    Float energy_dn(const F &field, const JF &j_) {
         Float e = 0.0;
         for (int i = 0; i < field.n_elements; ++i) {
             double corona = 0.0;
@@ -127,8 +132,8 @@ namespace ea {
         return -e;
     }
 
-    template <typename Float, typename F>
-    Float overlap(const F& f1, const F& f2) {
+    template<typename Float, typename F>
+    Float overlap(const F &f1, const F &f2) {
         Float overlap_ = 0.0;
         for (int i = 0; i < f1.n_elements; ++i) {
             overlap_ += f1[i] * f2[i];
@@ -136,8 +141,8 @@ namespace ea {
         return overlap_ / f1.n_elements;
     }
 
-    template <typename Float, typename F>
-    Float link_overlap(const F& field1, const F& field2) {
+    template<typename Float, typename F>
+    Float link_overlap(const F &field1, const F &field2) {
         Float link_overlap_ = 0.0;
         for (int i = 0; i < field1.n_elements; ++i) {
             for (auto d = 0; d < F::DIM; ++d) {
