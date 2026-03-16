@@ -8,17 +8,17 @@
 
 #include <omp.h>
 
-template <typename F, typename U>
-F::lattice_t::size_t sweep(F& field, U update) {
+template<typename F, typename U>
+F::lattice_t::size_t sweep(F &field, U update) {
     auto lat = field.lat;
     typename F::lattice_t::size_t accepted = 0;
-#pragma omp parallel for reduction(+:accepted)
+
     for (size_t i = 0; i < lat.n_elements / 2; i++) {
         auto site = lat.even(i);
         accepted += update(field, site);
     }
 
-#pragma omp parallel for reduction(+:accepted)
+
     for (auto i = 0; i < lat.n_elements / 2; i++) {
         auto site = lat.odd(i);
         accepted += update(field, site);
@@ -28,8 +28,8 @@ F::lattice_t::size_t sweep(F& field, U update) {
 }
 
 
-template <typename F, typename U>
-typename F::lattice_t::size_t sweep(F& field, U update, std::vector<typename F::lattice_t::size_t>& fixed_sites) {
+template<typename F, typename U>
+F::lattice_t::size_t sweep(F &field, U update, std::vector<typename F::lattice_t::size_t> &fixed_sites) {
     auto lat = field.lat;
     typename F::lattice_t::size_t accepted = 0;
     for (auto i = 0; i < lat.n_elements / 2; ++i) {
