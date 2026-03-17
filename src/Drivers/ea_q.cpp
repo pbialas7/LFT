@@ -20,6 +20,7 @@ namespace fs = std::filesystem;
 
 
 int main(int argc, char *argv[]) {
+    auto start_init = std::chrono::high_resolution_clock::now();
     auto max_threads = omp_get_max_threads();
 
     spdlog::info("Max number of threads = {}", max_threads);
@@ -56,6 +57,7 @@ int main(int argc, char *argv[]) {
 
     lft::rand::taus_array taus_rng(max_threads);
     taus_rng.gen_seeds(base_options.seed);
+
 
 #if 0
     using rng_t = std::mt19937_64;
@@ -107,6 +109,11 @@ int main(int argc, char *argv[]) {
 
     ea::HeathBath<float, lattice_t, rng_t> update(base_options.beta, rng, j_field);
 
+
+    auto end_init = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_init_seconds = end_init - start_init;
+    spdlog::info("Init took {:.3}s", elapsed_init_seconds.count());
+
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_term; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
@@ -126,6 +133,7 @@ int main(int argc, char *argv[]) {
 
 
     auto start = std::chrono::high_resolution_clock::now();
+    size_t n_meas = 0;
     for (int i = 0; i < base_options.n_sweeps; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             sweep_mt(*replica[j], update, taus_rng);
@@ -141,7 +149,11 @@ int main(int argc, char *argv[]) {
                     *em_stream_ptr << ea::link_overlap<double>(*replica[0], *replica[1]) << "\n";
                 } else
                     *em_stream_ptr << "\n";
-                em_stream_ptr->flush();
+                n_meas++;
+                if (n_meas == 10) {
+                    em_stream_ptr->flush();
+                    n_meas = 0;
+                }
             }
         }
 

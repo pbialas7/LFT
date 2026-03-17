@@ -27,19 +27,18 @@ F::lattice_t::size_t sweep(F &field, U update) {
 
 template<typename F, typename U, typename RNG>
 F::lattice_t::size_t sweep_mt(F &field, U update, RNG &rng) {
-    auto lat = field.lat;
     typename F::lattice_t::size_t accepted = 0;
-#pragma omp parallel for reduction(+:accepted)
-    for (size_t i = 0; i < lat.n_elements / 2; i++) {
+#pragma omp parallel for reduction(+:accepted) shared(update, rng)
+    for (size_t i = 0; i < field.lat.n_elements / 2; i++) {
         auto t = omp_get_thread_num();
-        auto site = lat.even(i);
+        auto site = field.lat.even(i);
         accepted += update(field, site, rng[t]);
     }
 
-#pragma omp parallel for reduction(+:accepted)
-    for (auto i = 0; i < lat.n_elements / 2; i++) {
+#pragma omp parallel for reduction(+:accepted) shared(update, rng)
+    for (auto i = 0; i < field.lat.n_elements / 2; i++) {
         auto t = omp_get_thread_num();
-        auto site = lat.odd(i);
+        auto site = field.lat.odd(i);
         accepted += update(field, site, rng[t]);
     }
     return accepted;

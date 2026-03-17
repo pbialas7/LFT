@@ -95,5 +95,5 @@ add_executable(ea_q src/Drivers/ea_q.cpp
 )
 target_link_libraries(ea_q PRIVATE lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
 target_include_directories(ea_q PRIVATE src)
-
+target_compile_options(ea_q PRIVATE  -fno-omit-frame-pointer)
 add_custom_target(all_targets DEPENDS ising ising1d ising3d phi4 xy ea_q)
