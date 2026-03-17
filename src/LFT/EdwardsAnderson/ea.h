@@ -56,7 +56,8 @@ namespace ea {
         HeathBath(F beta, rng_t &rng, const JField<F, L> &j) : beta_(beta), rng_(rng), j_(j), j_lat_(j.lat) {
         }
 
-        size_t operator()(field_class &field, size_t i) {
+        template<typename R>
+        size_t operator()(field_class &field, size_t i, R &rng) {
             F corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
                 auto idx = i + field.lat.n_elements * d;
@@ -70,12 +71,17 @@ namespace ea {
             }
             F p_up = std::exp(beta_ * corona) / (std::exp(beta_ * corona) + std::exp(-beta_ * corona));
 
-            auto r = u_(rng_);
+            auto r = u_(rng);
             if (r < p_up)
                 field[i] = 1;
             else
                 field[i] = -1;
             return 1;
+        }
+
+
+        size_t operator()(field_class &field, size_t i) {
+            return this->operator()(field, i, rng_);
         }
 
     private:

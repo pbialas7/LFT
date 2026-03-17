@@ -7,9 +7,11 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
+#include<omp.h>
 
 #include <Field/Lattice.h>
 
+#include "utils/rand.h"
 #include "MonteCarlo/sweep.h"
 #include "EdwardsAnderson/ea.h"
 #include "utils/fs.h"
@@ -36,6 +38,7 @@ void set_log_level(const std::string &level_name) {
 }
 
 int main(int argc, char *argv[]) {
+    auto max_threads = omp_get_max_threads();
     IsingBaseOptions base_options;
 
     int meas_freq = 0;
@@ -45,6 +48,7 @@ int main(int argc, char *argv[]) {
     std::string j_file_path;
     int n_replicas = 1;
     std::string spdlog_level("info");
+    int n_threads = 1;
 
 
     base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measure save frequency");
@@ -53,6 +57,7 @@ int main(int argc, char *argv[]) {
     base_options.cli |= lyra::opt(two_replicas)["-q"]["--two-replicas"]("Simulates two replicas.");
     base_options.cli |= lyra::opt(j_file_path, "J file")["-j"]["--j-file"]("File with link variables");
     base_options.cli |= lyra::opt(spdlog_level, "spdlog level")["--level"]("Sets the spdlog level");
+    base_options.cli |= lyra::opt(n_threads, "N threads")["--n-threads"]("Set number of threads to use");
 
 
     auto results = base_options.cli.parse({argc, argv});
@@ -62,17 +67,19 @@ int main(int argc, char *argv[]) {
     }
 
     set_log_level(spdlog_level);
-
+    omp_set_num_threads(n_threads);
 
     if (two_replicas)
         n_replicas = 2;
 
     spdlog::info("Lx {} Ly {}", base_options.Lx, base_options.Ly);
 
+    lft::rand::taus_array taus_rng(max_threads);
+    taus_rng.gen_seeds(base_options.seed);
+    using rng_t = lft::rand::taus_array::taus;
+    auto rng = taus_rng[0];
 
-    using rng_t = std::mt19937_64;
 
-    rng_t rng(base_options.seed);
     using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly}, 'C');
     std::array<ea::SpinField<lattice_t> *, 2> replica;
@@ -117,7 +124,7 @@ int main(int argc, char *argv[]) {
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_term; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
-            sweep(*replica[j], update);
+            sweep_mt(*replica[j], update, taus_rng);
         }
     }
     auto end_term = std::chrono::high_resolution_clock::now();
@@ -135,7 +142,7 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_sweeps; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
-            sweep(*replica[j], update);
+            sweep_mt(*replica[j], update, taus_rng);
         }
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             if (em_stream_ptr) {
