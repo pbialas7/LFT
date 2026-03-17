@@ -7,7 +7,6 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-#include <omp.h>
 
 #include <Field/Lattice.h>
 
@@ -17,12 +16,26 @@ namespace fs = std::filesystem;
 #include "ising_base_options.h"
 
 
+/**
+ * Sets the global log level based on a string name.
+ * Handles "trace", "debug", "info", "warn", "err", "critical", "off"
+ */
+void set_log_level(const std::string &level_name) {
+    // from_str returns the level enum; it is case-insensitive by default
+    spdlog::level::level_enum level = spdlog::level::from_str(level_name);
+
+    // If the string is invalid (doesn't match any level), from_str returns 'off'
+    // but usually, it's better to check if it was a deliberate "off"
+    if (level == spdlog::level::off && level_name != "off") {
+        spdlog::warn("Unknown log level '{}', defaulting to 'info'", level_name);
+        spdlog::set_level(spdlog::level::info);
+    } else {
+        spdlog::set_level(level);
+        spdlog::debug("Log level set to {}", level_name);
+    }
+}
+
 int main(int argc, char *argv[]) {
-    auto max_threads = omp_get_max_threads();
-
-    spdlog::info("Max number of threads = {}", max_threads);
-
-
     IsingBaseOptions base_options;
 
     int meas_freq = 0;
@@ -31,13 +44,15 @@ int main(int argc, char *argv[]) {
     bool two_replicas = false;
     std::string j_file_path;
     int n_replicas = 1;
-    int n_threads = 1;
+    std::string spdlog_level("info");
+
 
     base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measure save frequency");
     base_options.cli |= lyra::opt(ising)["--ising"]("Set J = 1");
     base_options.cli |= lyra::opt(binary)["--binary"]("Sets J =+/-1");
     base_options.cli |= lyra::opt(two_replicas)["-q"]["--two-replicas"]("Simulates two replicas.");
-    base_options.cli |= lyra::opt(j_file_path, "J file")["-j"]["--j-file"]("Fiole with link variables");
+    base_options.cli |= lyra::opt(j_file_path, "J file")["-j"]["--j-file"]("File with link variables");
+    base_options.cli |= lyra::opt(spdlog_level, "spdlog level")["--level"]("Sets the spdlog level");
 
 
     auto results = base_options.cli.parse({argc, argv});
@@ -45,7 +60,10 @@ int main(int argc, char *argv[]) {
         std::cerr << "Error in command line: " << results.message() << std::endl;
         return 1;
     }
-    omp_set_num_threads(n_threads);
+
+    set_log_level(spdlog_level);
+
+
     if (two_replicas)
         n_replicas = 2;
 
@@ -55,8 +73,6 @@ int main(int argc, char *argv[]) {
     using rng_t = std::mt19937_64;
 
     rng_t rng(base_options.seed);
-    std::bernoulli_distribution bern(0.5);
-    std::normal_distribution<double> normal(0.0, 1.0);
     using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly}, 'C');
     std::array<ea::SpinField<lattice_t> *, 2> replica;
@@ -65,8 +81,8 @@ int main(int argc, char *argv[]) {
         replica[j] = new ea::SpinField<lattice_t>(lat, 1);
     }
 
-
     lft::Lattice<uint32_t, 3> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
+
     auto j_field = lft::make_field(j_lat, 1.0f);
     if (j_file_path.empty()) {
         if (!ising) {

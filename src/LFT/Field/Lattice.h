@@ -12,31 +12,31 @@
 
 
 namespace {
-    template <typename I, std::size_t DIM>
-    std::size_t n_elem_(const std::array<I, DIM>& dims) {
+    template<typename I, std::size_t DIM>
+    std::size_t n_elem_(const std::array<I, DIM> &dims) {
         std::size_t n = dims[0];
         for (int i = 1; i < DIM; i++)
             n *= dims[i];
         return n;
     }
 
-    template <typename I, std::size_t DIM>
-    void set_strides_(const std::array<I, DIM>& dims, std::array<I, DIM>& strides, char order = 'F') {
+    template<typename I, std::size_t DIM>
+    void set_strides_(const std::array<I, DIM> &dims, std::array<I, DIM> &strides, char order = 'F') {
         switch (order) {
-        case 'F':
-            strides[0] = 1;
-            for (auto i = 1; i < DIM; ++i) {
-                strides[i] = strides[i - 1] * dims[i - 1];
-            }
-            break;
-        case 'C':
-            strides[DIM - 1] = 1;
-            for (int i = DIM - 1; i > 0; --i) {
-                strides[i - 1] = strides[i] * dims[i];
-            }
-            break;
-        default:
-            spdlog::error("Invalid order: {}, expected 'C' or 'F'", order);
+            case 'F':
+                strides[0] = 1;
+                for (auto i = 1; i < DIM; ++i) {
+                    strides[i] = strides[i - 1] * dims[i - 1];
+                }
+                break;
+            case 'C':
+                strides[DIM - 1] = 1;
+                for (int i = DIM - 1; i > 0; --i) {
+                    strides[i - 1] = strides[i] * dims[i];
+                }
+                break;
+            default:
+                spdlog::error("Invalid order: {}, expected 'C' or 'F'", order);
         }
     }
 }
@@ -49,7 +49,7 @@ namespace lft {
      *
      *  i_0, i_1, i_2 -> i_0 +dims[0]* i_1 + dims[0]*dims[1]*i_2
      */
-    template <typename I, int D>
+    template<typename I, int D>
     class MultiIndex {
     public:
         static const int DIM = D;
@@ -66,28 +66,28 @@ namespace lft {
             set_strides_(this->dims, strides_, order);
         }
 
-        MultiIndex& operator++() {
+        MultiIndex &operator++() {
             switch (order_) {
-            case 'F':
-                coords_[0]++;
-                for (auto i = 0; i < DIM - 1; i++) {
-                    if (coords_[i] >= dims[i]) {
-                        ++coords_[i + 1];
-                        coords_[i] = 0;
+                case 'F':
+                    coords_[0]++;
+                    for (auto i = 0; i < DIM - 1; i++) {
+                        if (coords_[i] >= dims[i]) {
+                            ++coords_[i + 1];
+                            coords_[i] = 0;
+                        }
                     }
-                }
-                break;
-            case 'C':
-                coords_[DIM - 1]++;
-                for (int i = DIM - 1; i > 0; --i) {
-                    if (coords_[i] >= dims[i]) {
-                        ++coords_[i - 1];
-                        coords_[i] = 0;
+                    break;
+                case 'C':
+                    coords_[DIM - 1]++;
+                    for (int i = DIM - 1; i > 0; --i) {
+                        if (coords_[i] >= dims[i]) {
+                            ++coords_[i - 1];
+                            coords_[i] = 0;
+                        }
                     }
-                }
-                break;
-            default:
-                spdlog::error("Invalid order: {}, expected 'C' or 'F'", order_);
+                    break;
+                default:
+                    spdlog::error("Invalid order: {}, expected 'C' or 'F'", order_);
             }
             return *this;
         }
@@ -123,7 +123,7 @@ namespace lft {
      * The class provides methods to get the nearest neighbor indices, the even and odd sites, and
      * to convert between coordinates and linear index.
      */
-    template <typename I=uint32_t, int D = 2>
+    template<typename I=uint32_t, int D = 2>
     class Lattice {
     public:
         static const int DIM = D;
@@ -131,9 +131,12 @@ namespace lft {
         using index_t = I;
         using size_t = std::size_t;
 
+        //Lattice(const Lattice &) = delete;
 
         Lattice(std::array<I, DIM> dims, char order = 'F') : dims(dims), n_elements(n_elem_(dims)),
                                                              nn_(2 * DIM * n_elements) {
+            spdlog::debug("Lattice()");
+
             MultiIndex<I, DIM> m_index(dims, order);
 
             set_strides_(dims, strides_, order);
@@ -147,8 +150,7 @@ namespace lft {
 
                 if (i_sum % 2 == 0) {
                     even_.push_back(idx_);
-                }
-                else {
+                } else {
                     odd_.push_back(idx_);
                 }
 

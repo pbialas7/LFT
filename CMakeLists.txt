@@ -49,7 +49,6 @@ if (APPLE)
     endif()
 endif()
 
-find_package(OpenMP REQUIRED)
 
 add_subdirectory(src/LFT)
 add_subdirectory(tests)
@@ -91,7 +90,8 @@ add_executable(ea_q src/Drivers/ea_q.cpp
         src/utils/fs.h
         src/utils/fs.cpp
 )
-target_link_libraries(ea_q PRIVATE lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
+target_link_libraries(ea_q PRIVATE lft lyra spdlog::spdlog)
 target_include_directories(ea_q PRIVATE src)
+target_compile_options(ea_q PRIVATE -g -fno-omit-frame-pointer)
 
 add_custom_target(all_targets DEPENDS ising ising1d ising3d phi4 xy ea_q)

@@ -11,7 +11,7 @@
 #include "Field/Lattice.h"
 
 namespace lft {
-    template <typename F, typename L>
+    template<typename F, typename L>
     class Field {
     public:
         using field_t = F;
@@ -21,17 +21,17 @@ namespace lft {
         const size_t n_elements;
         const lattice_t lat;
 
-        explicit Field(const lattice_t& lat) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements) {
+        explicit Field(const lattice_t &lat) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements) {
         }
 
-        Field(const lattice_t& lat, field_t val) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements, val) {
+        Field(const lattice_t &lat, field_t val) : lat(lat), n_elements(lat.n_elements), field_(lat.n_elements, val) {
         }
 
-        field_t& operator[](size_t i) { return field_[i]; }
+        field_t &operator[](size_t i) { return field_[i]; }
 
         field_t operator[](size_t i) const { return field_[i]; }
 
-        field_t& operator[](typename lattice_t::dim_t dims) {
+        field_t &operator[](typename lattice_t::dim_t dims) {
             return field_[lat.idx(dims)];
         }
 
@@ -60,7 +60,7 @@ namespace lft {
             return up_corona(i) + dn_corona(i);
         }
 
-        const field_t* data() const {
+        const field_t *data() const {
             return field_.data();
         }
 
@@ -68,12 +68,12 @@ namespace lft {
             std::fill(field_.begin(), field_.end(), val);
         }
 
-        void write(std::ostream& out) const {
-            out.write((const char*)field_.data(), sizeof(field_t) * n_elements);
+        void write(std::ostream &out) const {
+            out.write((const char *) field_.data(), sizeof(field_t) * n_elements);
         }
 
 
-        friend std::ostream& operator<<(std::ostream& out, const Field& field) {
+        friend std::ostream &operator<<(std::ostream &out, const Field &field) {
             for (auto d = 0; d < field.n_elements; ++d) {
                 out << field[d] << "\n";
             }
@@ -84,27 +84,27 @@ namespace lft {
         std::vector<field_t> field_;
     };
 
-    template <typename F, typename L>
-    Field<F, L> make_field(const L& lat) {
+    template<typename F, typename L>
+    Field<F, L> make_field(const L &lat) {
         return Field<F, L>(lat);
     }
 
-    template <typename F, typename L>
-    Field<F, L> make_field(const L& lat, F val) {
+    template<typename F, typename L>
+    Field<F, L> make_field(const L &lat, F val) {
         return Field<F, L>(lat, val);
     }
 
 
-    template <typename Res, typename F>
-    Res sum(const F& field) {
+    template<typename Res, typename F>
+    Res sum(const F &field) {
         Res sum = Res(0);
         for (auto i = 0; i < field.n_elements; ++i)
             sum += field[i];
         return sum;
     }
 
-    template <typename Float, typename F>
-    Float mean(const F& field) {
+    template<typename Float, typename F>
+    Float mean(const F &field) {
         return sum<Float, F>(field) / field.n_elements;
     }
 }
