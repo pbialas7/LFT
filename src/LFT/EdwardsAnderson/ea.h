@@ -58,6 +58,7 @@ namespace ea {
 
         template<typename R>
         size_t operator()(field_class &field, size_t i, R &rng) {
+            auto r = std::log(F(1.0) / u_(rng) - F(1.0));
             F corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
                 auto idx = i + field.lat.n_elements * d;
@@ -69,10 +70,10 @@ namespace ea {
                 auto idx = dn_site + field.lat.n_elements * d;
                 corona += field[dn_site] * j_[idx];
             }
-            F p_up = std::exp(beta_ * corona) / (std::exp(beta_ * corona) + std::exp(-beta_ * corona));
+            F r_p_up = -F(2.0) * beta_ * corona;
 
-            auto r = u_(rng);
-            if (r < p_up)
+
+            if (r > r_p_up)
                 field[i] = 1;
             else
                 field[i] = -1;
