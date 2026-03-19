@@ -37,6 +37,53 @@ void set_log_level(const std::string &level_name) {
     }
 }
 
+template<typename Field, typename RNG>
+void init_J(Field &j_field, const std::string &j_file_path, bool binary, bool ising, RNG &rng) {
+    auto &j_lat = j_field.lat;
+    if (j_file_path.empty()) {
+        if (!ising) {
+            if (binary)
+                lft::ea::init_bernoulli(j_field, rng);
+            else
+                lft::ea::init_gaussian(j_field, rng);
+        }
+    } else {
+        std::ifstream ifs(j_file_path, std::ios::in);
+        if (!ifs) {
+            spdlog::error("Error opening J file : {}", j_file_path);
+            exit(1);
+        }
+        for (std::size_t i = 0; i < j_lat.n_elements; ++i) {
+            float val = 7.0;
+            if (!(ifs >> val)) {
+                spdlog::error("J file  {} too short at {}", j_file_path, i);
+                exit(1);
+            }
+            j_field[i] = val;
+        }
+    }
+}
+
+using lattice_t = lft::Lattice<uint32_t>;
+
+void measure_em(std::fstream *em_stream_ptr, int n_replicas,
+                const std::array<lft::ea::SpinField<lattice_t> *, 2> &replica,
+                const lft::ea::JField<float, lattice_t> &j_field) {
+    if (em_stream_ptr) {
+        for (int j = 0; j < n_replicas; ++j) {
+            *em_stream_ptr << lft::ea::energy<double>(*replica[j], j_field) << " ";
+            *em_stream_ptr << lft::ea::magnetisation<double>(*replica[j]) << " ";
+        }
+        if (n_replicas > 1) {
+            *em_stream_ptr << lft::ea::overlap<double>(*replica[0], *replica[1]) << " ";
+            *em_stream_ptr << lft::ea::link_overlap<double>(*replica[0], *replica[1]) << "\n";
+        } else
+            *em_stream_ptr << "\n";
+        em_stream_ptr->flush();
+    }
+}
+
+
 int main(int argc, char *argv[]) {
     auto max_threads = omp_get_max_threads();
     IsingBaseOptions base_options;
@@ -80,54 +127,33 @@ int main(int argc, char *argv[]) {
     auto rng = taus_rng[0];
 
 
-    using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({base_options.Lx, base_options.Ly}, 'C');
-    std::array<ea::SpinField<lattice_t> *, 2> replica;
+    std::array<lft::ea::SpinField<lattice_t> *, 2> replica;
 
     for (int j = 0; j < n_replicas; ++j) {
-        replica[j] = new ea::SpinField<lattice_t>(lat, 1);
+        replica[j] = new lft::ea::SpinField<lattice_t>(lat, 1);
     }
 
     lft::Lattice<uint32_t, 3> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
 
+
     auto j_field = lft::make_field(j_lat, 1.0f);
-    if (j_file_path.empty()) {
-        if (!ising) {
-            if (binary)
-                ea::init_bernoulli(j_field, rng);
-            else
-                ea::init_gaussian(j_field, rng);
-        }
-    } else {
-        std::ifstream ifs(j_file_path, std::ios::in);
-        if (!ifs) {
-            spdlog::error("Error opening J file : {}", j_file_path);
-            exit(1);
-        }
-        for (std::size_t i = 0; i < j_lat.n_elements; ++i) {
-            float val = 7.0;
-            if (!(ifs >> val)) {
-                spdlog::error("J file  {} too short at {}", j_file_path, i);
-                exit(1);
-            }
-            j_field[i] = val;
-        }
-    }
+    init_J(j_field, j_file_path, binary, ising, rng);
 
     auto j_path = make_file_path(base_options.data_dir, "j", base_options.name, "txt");
     std::fstream j_file(j_path, std::fstream::out);
     j_file << j_field << "\n";
     j_file.close();
 
-    ea::HeathBath<float, lattice_t, rng_t> update(base_options.beta, rng, j_field);
+    lft::ea::HeathBath<float, lattice_t, rng_t> heath_bath(base_options.beta, rng, j_field);
 
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_term; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             if (n_threads > 1)
-                sweep_mt(*replica[j], update, taus_rng);
+                heath_bath.sweep_mt(*replica[j], taus_rng);
             else
-                sweep(*replica[j], update);
+                heath_bath.sweep(*replica[j]);
         }
     }
     auto end_term = std::chrono::high_resolution_clock::now();
@@ -146,23 +172,12 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < base_options.n_sweeps; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             if (n_threads > 1)
-                sweep(*replica[j], update);
+                heath_bath.sweep_mt(*replica[j], taus_rng);
             else
-                sweep(*replica[j], update);
+                heath_bath.sweep(*replica[j]);
         }
         if (meas_freq > 0 && (i % meas_freq) == 0) {
-            if (em_stream_ptr) {
-                for (int j = 0; j < n_replicas; ++j) {
-                    *em_stream_ptr << ea::energy<double>(*replica[j], j_field) << " ";
-                    *em_stream_ptr << ea::magnetisation<double>(*replica[j]) << " ";
-                }
-                if (two_replicas) {
-                    *em_stream_ptr << ea::overlap<double>(*replica[0], *replica[1]) << " ";
-                    *em_stream_ptr << ea::link_overlap<double>(*replica[0], *replica[1]) << "\n";
-                } else
-                    *em_stream_ptr << "\n";
-                em_stream_ptr->flush();
-            }
+            measure_em(em_stream_ptr, n_replicas, replica, j_field);
         }
 
         if (base_options.save_freq > 0 && (i % base_options.save_freq) == 0) {

@@ -12,7 +12,7 @@
 
 #include "Field/Field.h"
 
-namespace ea {
+namespace lft::ea {
     template<typename L>
     using SpinField = lft::Field<int8_t, L>;
     template<typename L>
@@ -57,7 +57,7 @@ namespace ea {
         }
 
         template<typename R>
-        size_t operator()(field_class &field, size_t i, R &rng) {
+        size_t update(field_class &field, size_t i, R &rng) {
             auto r = std::log(F(1.0) / u_(rng) - F(1.0));
             F corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
@@ -81,8 +81,53 @@ namespace ea {
         }
 
 
+        template<typename R>
+        size_t operator()(field_class &field, size_t i, R &rng) {
+            return update(field, i, rng);
+        }
+
         size_t operator()(field_class &field, size_t i) {
-            return this->operator()(field, i, rng_);
+            return update(field, i, rng_);
+        }
+
+
+        size_t sweep(SpinField<L> &field, RNG &rng) {
+            auto &lat = field.lat;
+            size_t accepted = 0;
+            for (size_t i = 0; i < lat.n_elements / 2; i++) {
+                auto site = lat.even(i);
+                accepted += update(field, site, rng);
+            }
+
+            for (auto i = 0; i < lat.n_elements / 2; i++) {
+                auto site = lat.odd(i);
+                accepted += update(field, site, rng);
+            }
+
+            return accepted;
+        }
+
+        size_t sweep(SpinField<L> &field) {
+            return sweep(field, rng_);
+        }
+
+        template<typename SWEEP_RNG>
+        size_t sweep_mt(SpinField<L> &field, SWEEP_RNG &rng) {
+            size_t accepted = 0;
+#pragma omp parallel for reduction(+:accepted) shared(rng)
+            for (size_t i = 0; i < field.lat.n_elements / 2; i++) {
+                auto t = omp_get_thread_num();
+                auto site = field.lat.even(i);
+                accepted += update(field, site, rng[t]);
+            }
+
+#pragma omp parallel for reduction(+:accepted) shared(rng)
+            for (auto i = 0; i < field.lat.n_elements / 2; i++) {
+                auto t = omp_get_thread_num();
+                auto site = field.lat.odd(i);
+                accepted += update(field, site, rng[t]);
+            }
+            return accepted;
         }
 
     private:
