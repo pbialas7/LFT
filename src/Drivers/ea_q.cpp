@@ -149,23 +149,21 @@ int main(int argc, char *argv[]) {
         n_replicas = 2;
 
 
+    // Creating Parallel tempering updater.
     lft::ea::ParallelTempering<lattice_t> temperer(n_replicas, 1, {0.9f}, j_field);
     for (int j = 0; j < n_replicas; ++j) {
         temperer.replicas[0][j] = new lft::ea::SpinField(lat, 1);
         init_field(*temperer.replicas[0][j], "", true, base_options.cold_start, rng);
     }
 
-    //Creating the heath bath updater
-    lft::ea::HeathBath<float, lattice_t> heath_bath(base_options.beta, j_field);
-
 
     // Thermalisation loop
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_term; ++i) {
         if (n_threads > 1)
-            temperer.replicas[0].sweep_mt(1, heath_bath, taus_rng);
+            temperer.sweep_mt(1, taus_rng);
         else
-            temperer.replicas[0].sweep(1, heath_bath, taus_rng[0]);
+            temperer.sweep_t1(1, taus_rng[0]);
     }
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
@@ -184,9 +182,10 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_sweeps; ++i) {
         if (n_threads > 1)
-            temperer.replicas[0].sweep_mt(1, heath_bath, taus_rng);
+            temperer.sweep_mt(1, taus_rng);
         else
-            temperer.replicas[0].sweep(1, heath_bath, taus_rng[0]);
+            temperer.sweep_t1(1, taus_rng[0]);
+
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             measure_em(em_stream_ptr, temperer.replicas[0], j_field);
         }

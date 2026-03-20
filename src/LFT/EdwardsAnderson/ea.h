@@ -53,8 +53,14 @@ namespace lft::ea {
         using field_t = field_class::field_t;
 
 
+        HeathBath(const JField<F, L> &j) : j_(j), j_lat_(j.lat), beta_() {
+        }
+
         HeathBath(F beta, const JField<F, L> &j) : beta_(beta), j_(j), j_lat_(j.lat) {
         }
+
+        void set_beta(F beta) { beta_ = beta; }
+
 
         template<typename R>
         size_t update(field_class &field, size_t i, R &rng) {

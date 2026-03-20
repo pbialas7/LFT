@@ -26,8 +26,9 @@ namespace lft::ea {
             return replica[i];
         }
 
+
         template<typename RNG>
-        size_t sweep(int n, HeathBath<float, L> &heath_bath, RNG &rng) {
+        size_t sweep_t1(int n, HeathBath<float, L> &heath_bath, RNG &rng) {
             size_t acceptance = 0;
             for (int i = 0; i < n; ++i) {
                 for (int j = 0; j < q; ++j) {
@@ -52,12 +53,34 @@ namespace lft::ea {
     template<typename L>
     struct ParallelTempering {
         ParallelTempering(int q, int n, const std::vector<float> &betas,
-                          const JField<float, L> &J) : replicas(n, Replicas<L>(q)), betas(betas), J(J) {
+                          const JField<float, L> &J_a) : replicas(n, Replicas<L>(q)), betas(betas), J(J),
+                                                       heath_bath(n, J_a) {
+            for (int i = 0; i < n; ++i) {
+                heath_bath[i].set_beta(betas[i]);
+            }
         }
 
+        template<typename RNG>
+        size_t sweep_mt(int n, RNG &rng) {
+            size_t acceptance = 0;
+            for (int i = 0; i < n; ++i) {
+                replicas[i].sweep_mt(n, heath_bath[i], rng);
+            }
+            return acceptance;
+        }
+
+        template<typename RNG>
+        size_t sweep_t1(int n, RNG &rng) {
+            size_t acceptance = 0;
+            for (int i = 0; i < n; ++i) {
+                replicas[i].sweep_t1(n, heath_bath[i], rng);
+            }
+            return acceptance;
+        }
 
         std::vector<Replicas<L> > replicas;
         std::vector<float> betas;
         JField<float, L> J;
+        std::vector<HeathBath<float, L> > heath_bath;
     };
 }
