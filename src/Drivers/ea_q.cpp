@@ -18,6 +18,7 @@ namespace fs = std::filesystem;
 #include "EdwardsAnderson/ea.h"
 #include "EdwardsAnderson/parallel_tempering.h"
 #include "utils/fs.h"
+#include "utils/hardware.h"
 #include "ising_base_options.h"
 
 
@@ -118,6 +119,7 @@ int main(int argc, char *argv[]) {
     set_log_level(spdlog_level);
     omp_set_num_threads(n_threads);
     spdlog::info("{} threads available, running on {}", max_threads, n_threads);
+
 
     if (two_replicas)
         n_replicas = 2;
