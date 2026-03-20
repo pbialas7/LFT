@@ -121,9 +121,6 @@ int main(int argc, char *argv[]) {
     spdlog::info("{} threads available, running on {}", max_threads, n_threads);
 
 
-    if (two_replicas)
-        n_replicas = 2;
-
     spdlog::info("Simulating a {}x{} lattice", base_options.Lx, base_options.Ly);
 
 
@@ -134,14 +131,9 @@ int main(int argc, char *argv[]) {
     lft::rand::taus_array taus_rng(max_threads);
     taus_rng.gen_seeds(base_options.seed);
 
+
+    // Creating link variables
     lattice_t lat({base_options.Lx, base_options.Ly}, 'C');
-    lft::ea::Replicas<lattice_t> replica(n_replicas);
-
-    for (int j = 0; j < n_replicas; ++j) {
-        replica[j] = new lft::ea::SpinField(lat, 1);
-        init_field(*replica[j], "", true, base_options.cold_start, rng);
-    }
-
     lft::ea::JLattice<lattice_t> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
     auto j_field = lft::make_field(j_lat, 1.0f);
     init_field(j_field, j_file_path, binary, ising, rng);
@@ -151,19 +143,36 @@ int main(int argc, char *argv[]) {
     j_file << j_field << "\n";
     j_file.close();
 
+    // Creating replicas
+
+    if (two_replicas)
+        n_replicas = 2;
+
+
+    lft::ea::ParallelTempering<lattice_t> temperer(n_replicas, 1, {0.9f}, j_field);
+    for (int j = 0; j < n_replicas; ++j) {
+        temperer.replicas[0][j] = new lft::ea::SpinField(lat, 1);
+        init_field(*temperer.replicas[0][j], "", true, base_options.cold_start, rng);
+    }
+
+    //Creating the heath bath updater
     lft::ea::HeathBath<float, lattice_t> heath_bath(base_options.beta, j_field);
 
+
+    // Thermalisation loop
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_term; ++i) {
         if (n_threads > 1)
-            replica.sweep_mt(1, heath_bath, taus_rng);
+            temperer.replicas[0].sweep_mt(1, heath_bath, taus_rng);
         else
-            replica.sweep(1, heath_bath, taus_rng[0]);
+            temperer.replicas[0].sweep(1, heath_bath, taus_rng[0]);
     }
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
     spdlog::info("Thermalisation took {:.3} seconds", elapsed_term_seconds.count());
 
+
+    // Measurements
     auto *em_stream_ptr = otional_fstream_ptr(
         make_file_path(base_options.data_dir, "em", base_options.name, "txt"),
         meas_freq > 0, std::fstream::out);
@@ -175,17 +184,17 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < base_options.n_sweeps; ++i) {
         if (n_threads > 1)
-            replica.sweep_mt(1, heath_bath, taus_rng);
+            temperer.replicas[0].sweep_mt(1, heath_bath, taus_rng);
         else
-            replica.sweep(1, heath_bath, taus_rng[0]);
+            temperer.replicas[0].sweep(1, heath_bath, taus_rng[0]);
         if (meas_freq > 0 && (i % meas_freq) == 0) {
-            measure_em(em_stream_ptr, replica, j_field);
+            measure_em(em_stream_ptr, temperer.replicas[0], j_field);
         }
 
         if (base_options.save_freq > 0 && (i % base_options.save_freq) == 0) {
             if (cfg_stream_ptr) {
                 for (int j = 0; j < n_replicas; ++j) {
-                    replica[j]->write(*cfg_stream_ptr);
+                    temperer.replicas[0][j]->write(*cfg_stream_ptr);
                 }
             }
         }
@@ -194,9 +203,6 @@ int main(int argc, char *argv[]) {
     std::chrono::duration<double> elapsed_seconds = end - start;
     spdlog::info("Sweeps took {:.3} seconds", elapsed_seconds.count());
 
-    for (int j = 0; j < n_replicas; ++j) {
-        delete replica[j];
-    }
 
     if (em_stream_ptr)
         delete em_stream_ptr;

@@ -12,6 +12,13 @@ namespace lft::ea {
         Replicas(int q) : q(q), replica(q, nullptr) {
         }
 
+        ~Replicas() {
+            for (int i = 0; i < q; ++i) {
+                if (replica[i])
+                    delete replica[i];
+            }
+        }
+
         const int q;
         std::vector<SpinField<L> *> replica;
 
@@ -44,11 +51,10 @@ namespace lft::ea {
 
     template<typename L>
     struct ParallelTempering {
-        ParallelTempering(int q, int n, const std::vector<float> &betas) : replicas(n, Replicas<L>(q)),
-                                                                           betas(betas) {
+        ParallelTempering(int q, int n, const std::vector<float> &betas,
+                          const JField<float, L> &J) : replicas(n, Replicas<L>(q)), betas(betas), J(J) {
         }
 
-        ~ParallelTempering();
 
         std::vector<Replicas<L> > replicas;
         std::vector<float> betas;
