@@ -150,10 +150,14 @@ int main(int argc, char *argv[]) {
 
 
     // Creating Parallel tempering updater.
-    lft::ea::ParallelTempering<lattice_t> temperer(n_replicas, 1, {0.9f}, j_field);
-    for (int j = 0; j < n_replicas; ++j) {
-        temperer.replicas[0][j] = new lft::ea::SpinField(lat, 1);
-        init_field(*temperer.replicas[0][j], "", true, base_options.cold_start, rng);
+    int n_betas = 4;
+    lft::ea::ParallelTempering<lattice_t> temperer(n_replicas, n_betas,
+                                                   {0.6f, 0.7f, 0.8f, 0.9f}, j_field);
+    for (int i = 0; i < n_betas; ++i) {
+        for (int j = 0; j < n_replicas; ++j) {
+            temperer.replicas[i][j] = new lft::ea::SpinField(lat, 1);
+            init_field(*temperer.replicas[i][j], "", true, base_options.cold_start, rng);
+        }
     }
 
 
@@ -171,10 +175,14 @@ int main(int argc, char *argv[]) {
 
 
     // Measurements
-    auto *em_stream_ptr = otional_fstream_ptr(
-        make_file_path(base_options.data_dir, "em", base_options.name, "txt"),
-        meas_freq > 0, std::fstream::out);
-    auto cfg_stream_ptr = otional_fstream_ptr(
+    std::vector<std::fstream *> em_stream_ptrs(n_betas, nullptr);
+    for (int i = 0; i < n_betas; ++i) {
+        em_stream_ptrs[i] = optional_fstream_ptr(
+            make_file_path(base_options.data_dir, "em",
+                           base_options.name + std::format("_b{:02d}", i), "txt"),
+            meas_freq > 0, std::fstream::out);
+    }
+    auto cfg_stream_ptr = optional_fstream_ptr(
         make_file_path(base_options.data_dir, "cfg", base_options.name, "bin"),
         base_options.save_freq > 0, std::ios::out | std::ios::binary);
 
@@ -187,7 +195,9 @@ int main(int argc, char *argv[]) {
             temperer.sweep_t1(1, taus_rng[0]);
 
         if (meas_freq > 0 && (i % meas_freq) == 0) {
-            measure_em(em_stream_ptr, temperer.replicas[0], j_field);
+            for (int j = 0; j < n_betas; ++j) {
+                measure_em(em_stream_ptrs[j], temperer.replicas[j], j_field);
+            }
         }
 
         if (base_options.save_freq > 0 && (i % base_options.save_freq) == 0) {
@@ -203,8 +213,10 @@ int main(int argc, char *argv[]) {
     spdlog::info("Sweeps took {:.3} seconds", elapsed_seconds.count());
 
 
-    if (em_stream_ptr)
-        delete em_stream_ptr;
+    for (int i = 0; i < n_betas; i++)
+        if (em_stream_ptrs[i])
+            delete em_stream_ptrs[i];
+
     if (cfg_stream_ptr)
         delete cfg_stream_ptr;
 

@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.18.1
+      jupytext_version: 1.19.1
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -27,7 +27,7 @@ from neumc.utils.stats_utils import bootstrap
 ```
 
 ```{python}
-from stats_utils import ac_and_tau_int, tor
+from stats_utils import ac_and_tau_int
 ```
 
 ```{python}
@@ -45,7 +45,7 @@ for b_ in bs:
 ```
 
 ```{python}
-em = np.loadtxt('data/em_16x16_J_a_b3040_z.txt')
+em = np.loadtxt('data/em_16x16_test.txt')
 em.shape
 ```
 
@@ -55,7 +55,7 @@ plt.plot(em[::d,1]);
 ```
 
 ```{python}
-d=500
+d=5
 tau, ac = ac_and_tau_int(em[::d,1])
 print(tau, tau*d)
 ```

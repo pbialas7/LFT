@@ -54,26 +54,29 @@ namespace lft::ea {
     struct ParallelTempering {
         ParallelTempering(int q, int n, const std::vector<float> &betas,
                           const JField<float, L> &J_a) : replicas(n, Replicas<L>(q)), betas(betas), J(J),
-                                                       heath_bath(n, J_a) {
+                                                         heath_bath(n, J_a) {
+            assert(betas.size() == n);
             for (int i = 0; i < n; ++i) {
                 heath_bath[i].set_beta(betas[i]);
             }
         }
 
         template<typename RNG>
-        size_t sweep_mt(int n, RNG &rng) {
+        size_t sweep_mt(int n_sweeps, RNG &rng) {
             size_t acceptance = 0;
-            for (int i = 0; i < n; ++i) {
-                replicas[i].sweep_mt(n, heath_bath[i], rng);
+            for (int i = 0; i < n_sweeps; ++i) {
+                for (int j = 0; j < betas.size(); j++)
+                    replicas[j].sweep_mt(n_sweeps, heath_bath[j], rng);
             }
             return acceptance;
         }
 
         template<typename RNG>
-        size_t sweep_t1(int n, RNG &rng) {
+        size_t sweep_t1(int n_sweeps, RNG &rng) {
             size_t acceptance = 0;
-            for (int i = 0; i < n; ++i) {
-                replicas[i].sweep_t1(n, heath_bath[i], rng);
+            for (int i = 0; i < n_sweeps; ++i) {
+                for (int j = 0; j < betas.size(); j++)
+                    replicas[j].sweep_t1(n_sweeps, heath_bath[j], rng);
             }
             return acceptance;
         }
