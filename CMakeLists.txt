@@ -42,12 +42,12 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 if (APPLE)
-    if(EXISTS "/opt/homebrew/opt/libomp") # Apple Silicon
+    if (EXISTS "/opt/homebrew/opt/libomp") # Apple Silicon
         set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
-    elseif(EXISTS "/usr/local/opt/libomp") # Intel Mac
+    elseif (EXISTS "/usr/local/opt/libomp") # Intel Mac
         set(OpenMP_ROOT "/usr/local/opt/libomp")
-    endif()
-endif()
+    endif ()
+endif ()
 
 
 find_package(OpenMP REQUIRED)

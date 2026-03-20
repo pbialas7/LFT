@@ -3,7 +3,9 @@ project(LFT LANGUAGES CXX)
 
 add_library(lft INTERFACE Ising/correlation_function.h
         Ising/Wolff.h
-        EdwardsAnderson/ea.h)
+        EdwardsAnderson/ea.h
+        EdwardsAnderson/parallel_tempering.cpp
+        EdwardsAnderson/parallel_tempering.h)
 target_include_directories(lft INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_link_libraries(lft INTERFACE glm::glm OpenMP::OpenMP_CXX)
 target_compile_options(lft INTERFACE -g -fno-omit-frame-pointer)

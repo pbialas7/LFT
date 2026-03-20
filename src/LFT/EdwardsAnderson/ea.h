@@ -8,6 +8,8 @@
 #include <cmath>
 #include <random>
 
+#include <omp.h>
+
 #include "spdlog/spdlog.h"
 
 #include "Field/Field.h"
@@ -42,18 +44,16 @@ namespace lft::ea {
     }
 
 
-    template<typename F, typename L, typename RNG>
+    template<typename F, typename L>
     struct HeathBath {
         using size_t = L::size_t;
         using index_t = L::index_t;
 
-
         using field_class = SpinField<L>;
         using field_t = field_class::field_t;
-        using rng_t = RNG;
 
 
-        HeathBath(F beta, rng_t &rng, const JField<F, L> &j) : beta_(beta), rng_(rng), j_(j), j_lat_(j.lat) {
+        HeathBath(F beta, const JField<F, L> &j) : beta_(beta), j_(j), j_lat_(j.lat) {
         }
 
         template<typename R>
@@ -70,8 +70,8 @@ namespace lft::ea {
                 auto idx = dn_site + field.lat.n_elements * d;
                 corona += field[dn_site] * j_[idx];
             }
-            F r_p_up = -F(2.0) * beta_ * corona;
 
+            F r_p_up = -F(2.0) * beta_ * corona;
 
             if (r > r_p_up)
                 field[i] = 1;
@@ -86,11 +86,8 @@ namespace lft::ea {
             return update(field, i, rng);
         }
 
-        size_t operator()(field_class &field, size_t i) {
-            return update(field, i, rng_);
-        }
 
-
+        template<typename RNG>
         size_t sweep(SpinField<L> &field, RNG &rng) {
             auto &lat = field.lat;
             size_t accepted = 0;
@@ -107,9 +104,6 @@ namespace lft::ea {
             return accepted;
         }
 
-        size_t sweep(SpinField<L> &field) {
-            return sweep(field, rng_);
-        }
 
         template<typename SWEEP_RNG>
         size_t sweep_mt(SpinField<L> &field, SWEEP_RNG &rng) {
@@ -132,7 +126,6 @@ namespace lft::ea {
 
     private:
         F beta_;
-        rng_t &rng_;
         std::uniform_real_distribution<F> u_;
         JField<F, L> j_;
         JLattice<L> j_lat_;
