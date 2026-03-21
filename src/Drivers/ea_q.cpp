@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
     int n_replicas = 1;
     std::string spdlog_level("info");
     int n_threads = 1;
+    int exchange_freq = 0;
 
 
     base_options.cli |= lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measure save frequency");
@@ -108,6 +109,8 @@ int main(int argc, char *argv[]) {
     base_options.cli |= lyra::opt(j_file_path, "J file")["-j"]["--j-file"]("File with link variables");
     base_options.cli |= lyra::opt(spdlog_level, "spdlog level")["--level"]("Sets the spdlog level");
     base_options.cli |= lyra::opt(n_threads, "N threads")["--n-threads"]("Set number of threads to use");
+    base_options.cli |= lyra::opt(exchange_freq, "exchange freq")["--exchange-freq"];
+    base_options.cli |= lyra::opt(spdlog_level, "spdlog level")["--debug"];
 
 
     auto results = base_options.cli.parse({argc, argv});
@@ -150,9 +153,9 @@ int main(int argc, char *argv[]) {
 
 
     // Creating Parallel tempering updater.
-    int n_betas = 4;
+    int n_betas = 1;
     lft::ea::ParallelTempering<lattice_t> temperer(n_replicas, n_betas,
-                                                   {0.6f, 0.7f, 0.8f, 0.9f}, j_field);
+                                                   {0.9f}, j_field);
     for (int i = 0; i < n_betas; ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             temperer.replicas[i][j] = new lft::ea::SpinField(lat, 1);
@@ -168,6 +171,11 @@ int main(int argc, char *argv[]) {
             temperer.sweep_mt(1, taus_rng);
         else
             temperer.sweep_t1(1, taus_rng[0]);
+
+        if ((i > 0) && (exchange_freq > 0) && (i % exchange_freq) == 0) {
+            for (int j = 0; j < n_replicas; ++j)
+                temperer.exchange(j, rng);
+        }
     }
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
@@ -193,6 +201,11 @@ int main(int argc, char *argv[]) {
             temperer.sweep_mt(1, taus_rng);
         else
             temperer.sweep_t1(1, taus_rng[0]);
+
+        if ((i > 0) && (exchange_freq > 0) && (i % exchange_freq) == 0) {
+            for (int j = 0; j < n_replicas; ++j)
+                temperer.exchange(j, rng);
+        }
 
         if (meas_freq > 0 && (i % meas_freq) == 0) {
             for (int j = 0; j < n_betas; ++j) {

@@ -1,7 +1,7 @@
 
 cmake-build-debug/
-
 cmake-build-release/
+cmake-build-relwithdebinfo/
 
 __pycache__/
 
@@ -12,11 +12,8 @@ copilot.data.migration.ask.xml
 ea/
 
 *.bin
-
 *.ipynb
-
 build/
-
 *.out
 
 em3d_*.txt
@@ -28,3 +25,11 @@ mag_*
 meas.txt
 /phi4_data/**
 /data2/**
+
+perf.*
+
+*.tar.gz
+*.tgz
+*.zip
+notebooks/EdwardsAnderson/Transformers/cfgs
+notebooks/EdwardsAnderson/Transformers/numpy

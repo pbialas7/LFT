@@ -9,8 +9,7 @@
 #include <random>
 
 #include <omp.h>
-
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 #include "Field/Field.h"
 
