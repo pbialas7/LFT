@@ -41,6 +41,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+
+FetchContent_Declare(
+        yaml-cpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+)
+FetchContent_MakeAvailable(yaml-cpp)
+
 if (APPLE)
     if (EXISTS "/opt/homebrew/opt/libomp") # Apple Silicon
         set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
@@ -70,8 +77,6 @@ target_compile_options(ising PRIVATE
         $<$<CONFIG:Release>:-O3 -DNDEBUG>
 )
 
-#set_target_properties(ising PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
-
 add_executable(ising1d src/Drivers/ising1d.cpp)
 target_link_libraries(ising1d PRIVATE lft lyra spdlog::spdlog)
 
@@ -94,7 +99,7 @@ add_executable(ea_q src/Drivers/ea_q.cpp
         src/utils/hardware.cpp
         src/utils/hardware.h
 )
-target_link_libraries(ea_q PRIVATE lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
+target_link_libraries(ea_q PRIVATE yaml-cpp::yaml-cpp lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
 target_include_directories(ea_q PRIVATE src)
 target_compile_options(ea_q PRIVATE -g -fno-omit-frame-pointer)
 
