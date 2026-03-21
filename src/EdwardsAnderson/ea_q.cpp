@@ -15,11 +15,11 @@ namespace fs = std::filesystem;
 
 #include "utils/rand.h"
 #include "MonteCarlo/sweep.h"
-#include "EdwardsAnderson/ea.h"
-#include "EdwardsAnderson/parallel_tempering.h"
+#include "ea.h"
+#include "parallel_tempering.h"
 #include "utils/fs.h"
 #include "utils/hardware.h"
-#include "ising_base_options.h"
+#include "Drivers/ising_base_options.h"
 
 
 /**

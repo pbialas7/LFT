@@ -61,6 +61,7 @@ find_package(OpenMP REQUIRED)
 
 add_subdirectory(src/LFT)
 add_subdirectory(tests)
+add_subdirectory(src/EdwardsAnderson)
 
 add_executable(ising src/Drivers/ising.cpp src/LFT/Ising/correlation_function.h
         src/LFT/Ising/Wolff.h
@@ -90,17 +91,5 @@ add_executable(xy src/Drivers/xy.cpp src/LFT/XY/xy.h)
 target_link_libraries(xy PRIVATE lft lyra spdlog::spdlog)
 
 
-add_executable(ea_q src/Drivers/ea_q.cpp
-        src/LFT/EdwardsAnderson/ea.h
-        src/Drivers/ising_base_options.cpp
-        src/Drivers/ising_base_options.h
-        src/utils/fs.h
-        src/utils/fs.cpp
-        src/utils/hardware.cpp
-        src/utils/hardware.h
-)
-target_link_libraries(ea_q PRIVATE yaml-cpp::yaml-cpp lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
-target_include_directories(ea_q PRIVATE src)
-target_compile_options(ea_q PRIVATE -g -fno-omit-frame-pointer)
 
 add_custom_target(all_targets DEPENDS ising ising1d ising3d phi4 xy ea_q)
