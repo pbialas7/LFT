@@ -9,7 +9,7 @@
 
 
 namespace lft::ea {
-    template<typename L>
+    template <typename L>
     struct Replicas {
         Replicas(int q) : q(q), replica(q, nullptr) {
         }
@@ -22,15 +22,15 @@ namespace lft::ea {
         }
 
         const int q;
-        std::vector<SpinField<L> *> replica;
+        std::vector<SpinField<L>*> replica;
 
-        SpinField<L> *&operator[](int i) {
+        SpinField<L>*& operator[](int i) {
             return replica[i];
         }
 
 
-        template<typename RNG>
-        size_t sweep_t1(int n, HeathBath<float, L> &heath_bath, RNG &rng) {
+        template <typename RNG>
+        size_t sweep_t1(int n, HeathBath<float, L>& heath_bath, RNG& rng) {
             size_t acceptance = 0;
             for (int i = 0; i < n; ++i) {
                 for (int j = 0; j < q; ++j) {
@@ -40,8 +40,8 @@ namespace lft::ea {
             return acceptance;
         }
 
-        template<typename RNG>
-        size_t sweep_mt(int n, HeathBath<float, L> &heath_bath, RNG &rng) {
+        template <typename RNG>
+        size_t sweep_mt(int n, HeathBath<float, L>& heath_bath, RNG& rng) {
             size_t acceptance = 0;
             for (int i = 0; i < n; ++i) {
                 for (int j = 0; j < q; ++j) {
@@ -52,10 +52,10 @@ namespace lft::ea {
         }
     };
 
-    template<typename L>
+    template <typename L>
     struct ParallelTempering {
-        ParallelTempering(int q, int n, const std::vector<float> &betas,
-                          const JField<float, L> &J_a) : q(q), replicas(n, Replicas<L>(q)), betas(betas), J(J_a),
+        ParallelTempering(int q, int n, const std::vector<float>& betas,
+                          const JField<float, L>& J_a) : q(q), replicas(n, Replicas<L>(q)), betas(betas), J(J_a),
                                                          heath_bath(n, J_a) {
             assert(betas.size() == n);
             for (int i = 0; i < n; ++i) {
@@ -63,8 +63,8 @@ namespace lft::ea {
             }
         }
 
-        template<typename RNG>
-        size_t sweep_mt(int n_sweeps, RNG &rng) {
+        template <typename RNG>
+        size_t sweep_mt(int n_sweeps, RNG& rng) {
             size_t acceptance = 0;
             for (int i = 0; i < n_sweeps; ++i) {
                 for (int j = 0; j < betas.size(); j++)
@@ -73,8 +73,8 @@ namespace lft::ea {
             return acceptance;
         }
 
-        template<typename RNG>
-        size_t sweep_t1(int n_sweeps, RNG &rng) {
+        template <typename RNG>
+        size_t sweep_t1(int n_sweeps, RNG& rng) {
             size_t acceptance = 0;
             for (int i = 0; i < n_sweeps; ++i) {
                 for (int j = 0; j < betas.size(); j++)
@@ -84,13 +84,13 @@ namespace lft::ea {
         }
 
 
-        template<typename RNG>
-        size_t exchange(int i_b1, int i_b2, int i_r, RNG &rng) {
+        template <typename RNG>
+        size_t exchange(int i_b1, int i_b2, int i_r, RNG& rng) {
             spdlog::trace("exchange {} {} {}", i_b1, i_b2, i_r);
             float b1 = betas[i_b1];
             float b2 = betas[i_b2];
             spdlog::trace("Exchange {} {}", b1, b2);
-            spdlog::trace("Exchange {} {}", (const void *) replicas[i_b1][i_r], (const void *) replicas[i_b2][i_r]);
+            spdlog::trace("Exchange {} {}", (const void*)replicas[i_b1][i_r], (const void*)replicas[i_b2][i_r]);
             float E1 = energy<float>(*replicas[i_b1][i_r], J);
             float E2 = energy<float>(*replicas[i_b2][i_r], J);
             float delta = (E1 - E2) * (b1 - b2);
@@ -104,8 +104,8 @@ namespace lft::ea {
             return 0;
         }
 
-        template<typename RNG>
-        size_t exchange(int i_r, RNG &rng) {
+        template <typename RNG>
+        size_t exchange(int i_r, RNG& rng) {
             size_t acceptance = 0;
             for (int j = 0; j < betas.size() - 1; j += 2)
                 acceptance += exchange(j, j + 1, i_r, rng);
@@ -114,18 +114,19 @@ namespace lft::ea {
             return acceptance;
         }
 
-        template<typename RNG>
-        size_t exchange(RNG &rng) {
+        template <typename RNG>
+        size_t exchange(RNG& rng) {
             size_t acceptance = 0;
             for (int j = 0; j < q; j++)
                 acceptance += exchange(j, rng);
+            return acceptance;
         }
 
         int q;
         std::uniform_real_distribution<float> u;
-        std::vector<Replicas<L> > replicas;
+        std::vector<Replicas<L>> replicas;
         std::vector<float> betas;
         JField<float, L> J;
-        std::vector<HeathBath<float, L> > heath_bath;
+        std::vector<HeathBath<float, L>> heath_bath;
     };
 }

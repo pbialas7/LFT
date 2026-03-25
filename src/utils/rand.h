@@ -12,7 +12,7 @@
 using Float = double;
 
 namespace lft::rand {
-    template<typename S, int SEEDS_PER_GEN, int ALIGNMENT_IN_BYTES>
+    template <typename S, int SEEDS_PER_GEN, int ALIGNMENT_IN_BYTES>
     class random_array_state {
     public:
         typedef S seed_t;
@@ -22,28 +22,30 @@ namespace lft::rand {
         random_array_state(int n_gen)
             : n_gen_(n_gen),
               SEEDS_BLOCK_SIZE(ALIGNMENT_IN_BYTES *
-                               ((sizeof(S) * SEEDS_PER_GEN + ALIGNMENT_IN_BYTES - 1) /
-                                ALIGNMENT_IN_BYTES)),
+                  ((sizeof(S) * SEEDS_PER_GEN + ALIGNMENT_IN_BYTES - 1) /
+                      ALIGNMENT_IN_BYTES)),
               SEEDS_BLOCK(SEEDS_BLOCK_SIZE / sizeof(S)) {
-            posix_memalign(
-                (void **) &seeds_, ALIGNMENT_IN_BYTES, SEEDS_BLOCK_SIZE * n_gen_);
+            auto err = posix_memalign(
+                (void**)&seeds_, ALIGNMENT_IN_BYTES, SEEDS_BLOCK_SIZE * n_gen_);
+            if (err)
+                std::cerr << "Error allocating memory for random generator seeds: " << strerror(err) << std::endl;
         }
 
         int n_gen() const { return n_gen_; }
 
-        void set_seeds(const S *seeds) {
+        void set_seeds(const S* seeds) {
             for (int i = 0; i < n_gen_; ++i) {
                 for (int j = 0; j < SEEDS_PER_GEN; ++j)
                     seeds_[i * SEEDS_BLOCK_SIZE / sizeof(S) + j] =
-                            seeds[i * SEEDS_PER_GEN + j];
+                        seeds[i * SEEDS_PER_GEN + j];
             }
         }
 
-        void get_seeds(S *seeds) const {
+        void get_seeds(S* seeds) const {
             for (int i = 0; i < n_gen_; ++i) {
                 for (int j = 0; j < SEEDS_PER_GEN; ++j)
                     seeds[i * SEEDS_PER_GEN + j] =
-                            seeds_[i * SEEDS_BLOCK_SIZE / sizeof(S) + j];
+                        seeds_[i * SEEDS_BLOCK_SIZE / sizeof(S) + j];
             }
         }
 
@@ -52,12 +54,12 @@ namespace lft::rand {
             for (int i = 0; i < n_gen_; ++i) {
                 for (int j = 0; j < SEEDS_PER_GEN; ++j)
                     seeds_[i * SEEDS_BLOCK_SIZE / sizeof(S) + j] =
-                            lrand48() % (std::numeric_limits<S>::max());
+                        lrand48() % (std::numeric_limits<S>::max());
             }
         }
 
-        int fwrite_state(FILE *fout) {
-            S *seeds = new S[SEEDS_PER_GEN * n_gen_];
+        int fwrite_state(FILE* fout) {
+            S* seeds = new S[SEEDS_PER_GEN * n_gen_];
             get_seeds(seeds);
             int bytes;
             const int n_params = 3;
@@ -68,29 +70,29 @@ namespace lft::rand {
             return bytes;
         }
 
-        int fread_state(FILE *fin) {
+        int fread_state(FILE* fin) {
             const int n_params = 3;
             int params[n_params];
             int bytes = std::fread(params, sizeof(int), n_params, fin);
             if (params[0] != n_gen_) {
                 std::ostringstream msg;
                 msg << "number of generators differ : program " << n_gen_ << " read "
-                        << params[0];
+                    << params[0];
                 throw(msg);
             }
             if (params[1] != SEEDS_PER_GEN) {
                 std::ostringstream msg;
                 msg << "SEES_PER_GEN differ : program " << SEEDS_PER_GEN << " read "
-                        << params[1];
+                    << params[1];
                 throw(msg);
             }
             if (params[2] != sizeof(S)) {
                 std::ostringstream msg;
                 std::cerr << "sizeof seeds differ : program " << sizeof(S) << " read "
-                        << params[2];
+                    << params[2];
                 throw(msg);
             }
-            S *seeds = new S[SEEDS_PER_GEN * n_gen_];
+            S* seeds = new S[SEEDS_PER_GEN * n_gen_];
             bytes += std::fread(seeds, sizeof(S), n_gen_ * SEEDS_PER_GEN, fin);
             set_seeds(seeds);
             delete[] seeds;
@@ -101,7 +103,7 @@ namespace lft::rand {
         const int SEEDS_BLOCK_SIZE;
         const int SEEDS_BLOCK;
         int n_gen_;
-        S *seeds_;
+        S* seeds_;
     };
 
 
@@ -131,15 +133,15 @@ namespace lft::rand {
             taus_step(seeds_[i * SEEDS_BLOCK + 2], 3, 11, 17, 4294967280u);
             LCG_step(seeds_[i * SEEDS_BLOCK + 3], 1664525u, 1013904223u);
             return (seeds_[i * SEEDS_BLOCK] ^ seeds_[i * SEEDS_BLOCK + 1] ^
-                    seeds_[i * SEEDS_BLOCK + 2] ^ seeds_[i * SEEDS_BLOCK + 3]);
+                seeds_[i * SEEDS_BLOCK + 2] ^ seeds_[i * SEEDS_BLOCK + 3]);
         }
 
 
-        static taus_array *generator() { return generator_; }
+        static taus_array* generator() { return generator_; }
 
         class taus {
         public:
-            taus(int i, taus_array *array) : i_(i), array_(array) {
+            taus(int i, taus_array* array) : i_(i), array_(array) {
             }
 
             using result_type = taus_array::result_type;
@@ -158,7 +160,7 @@ namespace lft::rand {
 
         private:
             int i_;
-            taus_array *array_;
+            taus_array* array_;
         };
 
         static void init(int n, long int seed) {
@@ -167,19 +169,19 @@ namespace lft::rand {
         }
 
 
-        taus &operator[](int i) {
+        taus& operator[](int i) {
             return taus_[i];
         }
 
     private:
-        void taus_step(unsigned &z, int S1, int S2, int S3, unsigned M) {
+        void taus_step(unsigned& z, int S1, int S2, int S3, unsigned M) {
             unsigned b = (((z << S1) ^ z) >> S2);
             z = (((z & M) << S3) ^ b);
         }
 
-        void LCG_step(unsigned &z, unsigned A, unsigned C) { z = (A * z + C); }
+        void LCG_step(unsigned& z, unsigned A, unsigned C) { z = (A * z + C); }
 
-        static taus_array *generator_;
+        static taus_array* generator_;
         std::pmr::vector<taus> taus_;
     };
 }

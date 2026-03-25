@@ -92,15 +92,10 @@ void measure_em(std::fstream* em_stream_ptr,
 
 int main(int argc, char* argv[]) {
     auto max_threads = std::thread::hardware_concurrency();
-    lft::ea::Options options;
+    lft::ea::Options options(argc, argv);
 
     int n_replicas = 1;
 
-    auto results = options.cli.parse({argc, argv});
-    if (!results) {
-        std::cerr << "Error in command line: " << results.message() << std::endl;
-        return 1;
-    }
 
     auto options_stream = std::fstream(make_file_path(options.data_dir, "opt", options.name, "yaml"), std::ios::out);
     options_stream << options.emit().c_str() << std::endl;
@@ -140,10 +135,10 @@ int main(int argc, char* argv[]) {
 
 
     // Creating Parallel tempering updater.
-    int n_betas = 1;
-    lft::ea::ParallelTempering<lattice_t> temperer(n_replicas, n_betas,
-                                                   {0.9f}, j_field);
-    for (int i = 0; i < n_betas; ++i) {
+
+    lft::ea::ParallelTempering<lattice_t> temperer(n_replicas, options.n_betas(),
+                                                   options.betas, j_field);
+    for (int i = 0; i < options.n_betas(); ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             temperer.replicas[i][j] = new lft::ea::SpinField(lat, 1);
             init_field(*temperer.replicas[i][j], "", true, options.cold_start, rng);
@@ -151,7 +146,7 @@ int main(int argc, char* argv[]) {
     }
 
 
-    // Thermalisation loop
+    // Thermalization loop
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < options.n_term; ++i) {
         if (options.n_threads > 1)
@@ -166,12 +161,12 @@ int main(int argc, char* argv[]) {
     }
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
-    spdlog::info("Thermalisation took {:.3} seconds", elapsed_term_seconds.count());
+    spdlog::info("Thermalization took {:.3} seconds", elapsed_term_seconds.count());
 
 
     // Measurements
-    std::vector<std::fstream*> em_stream_ptrs(n_betas, nullptr);
-    for (int i = 0; i < n_betas; ++i) {
+    std::vector<std::fstream*> em_stream_ptrs(options.n_betas(), nullptr);
+    for (int i = 0; i < options.n_betas(); ++i) {
         em_stream_ptrs[i] = optional_fstream_ptr(
             make_file_path(options.data_dir, "em",
                            options.name + std::format("_b{:02d}", i), "txt"),
@@ -182,6 +177,7 @@ int main(int argc, char* argv[]) {
         options.save_freq > 0, std::ios::out | std::ios::binary);
 
 
+    //Main loop
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < options.n_sweeps; ++i) {
         if (options.n_threads > 1)
@@ -189,17 +185,21 @@ int main(int argc, char* argv[]) {
         else
             temperer.sweep_t1(1, taus_rng[0]);
 
-        if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
-            for (int j = 0; j < n_replicas; ++j)
-                temperer.exchange(j, rng);
+        if (!options.no_pt) {
+            if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
+                for (int j = 0; j < n_replicas; ++j)
+                    temperer.exchange(j, rng);
+            }
         }
 
+        //Measurements
         if (options.meas_freq > 0 && (i % options.meas_freq) == 0) {
-            for (int j = 0; j < n_betas; ++j) {
+            for (int j = 0; j < options.n_betas(); ++j) {
                 measure_em(em_stream_ptrs[j], temperer.replicas[j], j_field);
             }
         }
 
+        //Saving configurations
         if (options.save_freq > 0 && (i % options.save_freq) == 0) {
             if (cfg_stream_ptr) {
                 for (int j = 0; j < n_replicas; ++j) {
@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
     spdlog::info("Sweeps took {:.3} seconds", elapsed_seconds.count());
 
 
-    for (int i = 0; i < n_betas; i++)
+    for (int i = 0; i < options.n_betas(); i++)
         if (em_stream_ptrs[i])
             delete em_stream_ptrs[i];
 
