@@ -21,6 +21,7 @@ jupyter:
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import yaml
 ```
 
 ```{python}
@@ -57,20 +58,14 @@ Ly = 32
 ```
 
 ```{python}
-beta = 0.9
+name = "32x32_xxx"
 ```
 
 ```{python}
-n_t = 8
-name =f'{Lx}x{Ly}_pt5_s1234_t{n_t}'
-```
-
-```{python}
-n_betas=1
-```
-
-```{python}
-name = "32x32_b0900_s78234_t8"
+with open(f"{ea_dir}/opt_{name}.yaml", "r") as f:
+    options = yaml.safe_load(f)
+n_betas=len(options['beta'])
+print(options['beta'])
 ```
 
 ```{python}
@@ -81,26 +76,23 @@ for i in range(n_betas):
 
 ```{python}
 for i in range(n_betas):
-  hist_int(em[i][:,0].numpy(),bin_width=4, histtype='step', label=i)
+  hist_int(em[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}")
 plt.legend();  
 ```
 
 ```{python}
+len(em[0])
+```
+
+```{python}
 d=1
-```
-
-```{python}
-em[0].shape
-```
-
-```{python}
 for i in range(n_betas):
   tau, ac = ac_and_tau_int(em[i][::d,1].numpy());
-  print(i,tau) 
+  print(f"{i:3d} {options['beta'][i]:.3f} {tau:.2f}") 
 ```
 
 ```{python}
-plt.plot(em[0][::50,0]);
+plt.plot(em[12][:10000:10,0]);
 ```
 
 ```{python}
@@ -108,26 +100,7 @@ plt.plot(ac);
 ```
 
 ```{python}
-torch_bootstrap(em[::d,2],n_samples=100, binsize=1)
-```
-
-```{python}
-n_t = 8
-name =f'{Lx}x{Ly}_b0900_xxx_s319751_t{n_t}'
-```
-
-```{python}
-em = torch.from_numpy(np.loadtxt(f"{ea_dir}/em_{name}.txt"))
-em.shape
-```
-
-```{python}
-tau, ac = ac_and_tau_int(em[:,1].numpy());
-tau 
-```
-
-```{python}
-torch_bootstrap(em[::d,0],n_samples=100, binsize=1)
+torch_bootstrap(em[0][:,0],n_samples=100, binsize=1)
 ```
 
 ```{python}
@@ -135,7 +108,43 @@ torch_bootstrap(em[::d,0],n_samples=100, binsize=1)
 ```
 
 ```{python}
-np.tanh(0.1)
+name = "32x32_xxx_noex"
+```
+
+```{python}
+with open(f"{ea_dir}/opt_{name}.yaml", "r") as f:
+    options = yaml.safe_load(f)
+n_betas=len(options['beta'])
+print(options['beta'])
+```
+
+```{python}
+em_noex=[]
+for i in range(n_betas):
+  em_noex.append(torch.from_numpy(np.loadtxt(f"{ea_dir}/em_{name}_b{i:02d}.txt")))
+```
+
+```{python}
+for i in range(n_betas):
+  hist_int(em_noex[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}")
+plt.legend();  
+```
+
+```{python}
+len(em_noex[0])
+```
+
+```{python}
+d=1
+for i in range(n_betas):
+  tau, ac = ac_and_tau_int(em_noex[i][::d,1].numpy());
+  print(f"{i:3d} {options['beta'][i]:.3f} {tau:.2f}") 
+```
+
+```{python}
+i = 12
+hist_int(em[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}", density=True);
+hist_int(em_noex[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}", density=True);
 ```
 
 ```{python}
