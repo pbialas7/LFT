@@ -59,6 +59,10 @@ endif ()
 
 find_package(OpenMP REQUIRED)
 
+
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/dist" CACHE PATH "Default install path" FORCE)
+
+
 add_subdirectory(src/LFT)
 add_subdirectory(tests)
 add_subdirectory(src/EdwardsAnderson)
@@ -93,3 +97,7 @@ target_link_libraries(xy PRIVATE lft lyra spdlog::spdlog)
 
 
 add_custom_target(all_targets DEPENDS ising ising1d ising3d phi4 xy ea_q)
+
+install(
+        TARGETS ea_q RUNTIME DESTINATION bin
+)
