@@ -50,7 +50,7 @@ namespace lft::ea {
                 | lyra::opt(n_threads, "N threads")["--n-threads"]("Set number of threads to use")
                 | lyra::opt(exchange_freq, "exchange freq")["--exchange-freq"]("Replicas exchange frequency")
                 | lyra::opt(spdlog_level, "spdlog level")["--debug"]("Loging level")
-                | lyra::opt(raw_betas, "betas")["--betas"]("Comma-separated list of betas for parallel tempering")
+                | lyra::opt(raw_betas, "beta")["--beta"]("Comma-separated list of betas for parallel tempering")
                 | lyra::opt(no_pt)["--no-pt"]("Disable parallel tempering");
 
             auto results = cli.parse({argc, argv});
@@ -59,19 +59,19 @@ namespace lft::ea {
                 exit(1);
             }
 
-            betas = split_floats(raw_betas);
-            if (betas.empty()) {
+            beta = split_floats(raw_betas);
+            if (beta.empty()) {
                 spdlog::error("No betas specified.");
                 exit(0);
             }
         }
 
-        int n_betas() const { return betas.size(); }
+        int n_betas() const { return beta.size(); }
 
         lyra::cli cli;
 
 
-        std::vector<float> betas;
+        std::vector<float> beta;
         uint32_t Lx = 0;
         uint32_t Ly = 0;
         int save_freq = 0;

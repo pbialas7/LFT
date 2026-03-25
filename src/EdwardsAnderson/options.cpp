@@ -8,7 +8,7 @@
 
 YAML::Emitter& lft::ea::Options::emit() {
     yaml << YAML::BeginMap;
-    yaml << YAML::Key << "betas" << YAML::Value << YAML::Flow << betas;
+    yaml << YAML::Key << "beta" << YAML::Value << YAML::Flow << beta;
     yaml << pair(Lx);
     yaml << pair(Ly);
     yaml << pair(save_freq);

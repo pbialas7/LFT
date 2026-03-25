@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
     // Creating Parallel tempering updater.
 
     lft::ea::ParallelTempering<lattice_t> temperer(n_replicas, options.n_betas(),
-                                                   options.betas, j_field);
+                                                   options.beta, j_field);
     for (int i = 0; i < options.n_betas(); ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             temperer.replicas[i][j] = new lft::ea::SpinField(lat, 1);
