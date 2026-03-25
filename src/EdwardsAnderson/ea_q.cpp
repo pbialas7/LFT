@@ -159,10 +159,20 @@ int main(int argc, char* argv[]) {
                 temperer.exchange(j, rng);
         }
     }
+
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
     spdlog::info("Thermalization took {:.3} seconds", elapsed_term_seconds.count());
 
+    if (options.exchange_freq > 0) {
+        spdlog::info("Exchange acceptance rates:");
+        for (auto i = 0; i < options.n_betas() - 1; i++) {
+            std::cout << std::format("{:.3f}->{:.3f} {:.2f}", options.beta[i], options.beta[i + 1],
+                                     (double)temperer.accepted_v[i] / temperer.exchange_v[i]) <<
+                std::endl;
+        }
+    }
+    temperer.reset();
 
     // Measurements
     std::vector<std::fstream*> em_stream_ptrs(options.n_betas(), nullptr);
@@ -185,12 +195,12 @@ int main(int argc, char* argv[]) {
         else
             temperer.sweep_t1(1, taus_rng[0]);
 
-        if (!options.no_pt) {
-            if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
-                for (int j = 0; j < n_replicas; ++j)
-                    temperer.exchange(j, rng);
-            }
+
+        if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
+            for (int j = 0; j < n_replicas; ++j)
+                temperer.exchange(j, rng);
         }
+
 
         //Measurements
         if (options.meas_freq > 0 && (i % options.meas_freq) == 0) {
@@ -211,7 +221,15 @@ int main(int argc, char* argv[]) {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     spdlog::info("Sweeps took {:.3} seconds", elapsed_seconds.count());
-
+    if (options.exchange_freq > 0) {
+        spdlog::info("Exchange acceptance rates:");
+        for (auto i = 0; i < options.n_betas() - 1; i++) {
+            std::cout << std::format("{:.3f}->{:.3f} {:.2f}", options.beta[i], options.beta[i + 1],
+                                     (double)temperer.accepted_v[i] / temperer.exchange_v[i]) <<
+                std::endl;
+        }
+    }
+    temperer.reset();
 
     for (int i = 0; i < options.n_betas(); i++)
         if (em_stream_ptrs[i])

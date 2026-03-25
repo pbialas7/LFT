@@ -26,7 +26,6 @@ YAML::Emitter& lft::ea::Options::emit() {
     yaml << pair(binary);
     yaml << pair(two_replicas);
     yaml << pair(j_file_path);
-    yaml << pair(no_pt);
     yaml << YAML::EndMap;
     return yaml;
 }

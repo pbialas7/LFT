@@ -56,7 +56,8 @@ namespace lft::ea {
     struct ParallelTempering {
         ParallelTempering(int q, int n, const std::vector<float>& betas,
                           const JField<float, L>& J_a) : q(q), replicas(n, Replicas<L>(q)), betas(betas), J(J_a),
-                                                         heath_bath(n, J_a) {
+                                                         heath_bath(n, J_a), accepted_v(n, 0), exchange_v(n, 0),
+                                                         u(0.0, 1.0) {
             assert(betas.size() == n);
             for (int i = 0; i < n; ++i) {
                 heath_bath[i].set_beta(betas[i]);
@@ -106,20 +107,33 @@ namespace lft::ea {
 
         template <typename RNG>
         size_t exchange(int i_r, RNG& rng) {
-            size_t acceptance = 0;
-            for (int j = 0; j < betas.size() - 1; j += 2)
-                acceptance += exchange(j, j + 1, i_r, rng);
-            for (int j = 1; j < betas.size() - 1; j += 2)
-                acceptance += exchange(j, j + 1, i_r, rng);
-            return acceptance;
+            size_t accepted = 0;
+            for (int j = 0; j < betas.size() - 1; j += 2) {
+                auto a = exchange(j, j + 1, i_r, rng);
+                accepted += a;
+                accepted_v[j] += a;
+                exchange_v[j]++;
+            }
+            for (int j = 1; j < betas.size() - 1; j += 2) {
+                auto a = exchange(j, j + 1, i_r, rng);
+                accepted += a;
+                accepted_v[j] += a;
+                exchange_v[j]++;
+            }
+            return accepted;
         }
 
         template <typename RNG>
         size_t exchange(RNG& rng) {
-            size_t acceptance = 0;
+            size_t accepted = 0;
             for (int j = 0; j < q; j++)
-                acceptance += exchange(j, rng);
-            return acceptance;
+                accepted += exchange(j, rng);
+            return accepted;
+        }
+
+        void reset() {
+            std::fill(accepted_v.begin(), accepted_v.end(), 0);
+            std::fill(exchange_v.begin(), exchange_v.end(), 0);
         }
 
         int q;
@@ -128,5 +142,7 @@ namespace lft::ea {
         std::vector<float> betas;
         JField<float, L> J;
         std::vector<HeathBath<float, L>> heath_bath;
+        std::vector<size_t> accepted_v;
+        std::vector<size_t> exchange_v;
     };
 }

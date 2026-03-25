@@ -50,8 +50,7 @@ namespace lft::ea {
                 | lyra::opt(n_threads, "N threads")["--n-threads"]("Set number of threads to use")
                 | lyra::opt(exchange_freq, "exchange freq")["--exchange-freq"]("Replicas exchange frequency")
                 | lyra::opt(spdlog_level, "spdlog level")["--debug"]("Loging level")
-                | lyra::opt(raw_betas, "beta")["--beta"]("Comma-separated list of betas for parallel tempering")
-                | lyra::opt(no_pt)["--no-pt"]("Disable parallel tempering");
+                | lyra::opt(raw_betas, "beta")["--beta"]("Comma-separated list of betas for parallel tempering");
 
             auto results = cli.parse({argc, argv});
             if (!results) {
@@ -91,7 +90,6 @@ namespace lft::ea {
         std::string spdlog_level;
         int n_threads = 1;
         int exchange_freq = 0;
-        bool no_pt = false;
 
         YAML::Emitter& emit();
 
