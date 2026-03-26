@@ -95,9 +95,5 @@ add_executable(xy src/Drivers/xy.cpp src/LFT/XY/xy.h)
 target_link_libraries(xy PRIVATE lft lyra spdlog::spdlog)
 
 
-
 add_custom_target(all_targets DEPENDS ising ising1d ising3d phi4 xy ea_q)
 
-install(
-        TARGETS ea_q RUNTIME DESTINATION bin
-)

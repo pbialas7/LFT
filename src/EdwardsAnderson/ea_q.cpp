@@ -182,9 +182,14 @@ int main(int argc, char* argv[]) {
                            options.name + std::format("_b{:02d}", i), "txt"),
             options.meas_freq > 0, std::fstream::out);
     }
-    auto cfg_stream_ptr = optional_fstream_ptr(
-        make_file_path(options.data_dir, "cfg", options.name, "bin"),
-        options.save_freq > 0, std::ios::out | std::ios::binary);
+
+
+    std::vector<std::fstream*> cfg_stream_ptrs(options.n_betas(), nullptr);
+    for (int i = 0; i < options.n_betas(); ++i) {
+        cfg_stream_ptrs[i] = optional_fstream_ptr(
+            make_file_path(options.data_dir, "cfg", options.name + std::format("_b{:02d}", i), "bin"),
+            options.save_freq > 0, std::ios::out | std::ios::binary);
+    }
 
 
     //Main loop
@@ -211,11 +216,12 @@ int main(int argc, char* argv[]) {
 
         //Saving configurations
         if (options.save_freq > 0 && (i % options.save_freq) == 0) {
-            if (cfg_stream_ptr) {
-                for (int j = 0; j < n_replicas; ++j) {
-                    temperer.replicas[0][j]->write(*cfg_stream_ptr);
+            for (int i = 0; i < options.n_betas(); ++i)
+                if (cfg_stream_ptrs[i]) {
+                    for (int j = 0; j < n_replicas; ++j) {
+                        temperer.replicas[i][j]->write(*cfg_stream_ptrs[i]);
+                    }
                 }
-            }
         }
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -235,8 +241,9 @@ int main(int argc, char* argv[]) {
         if (em_stream_ptrs[i])
             delete em_stream_ptrs[i];
 
-    if (cfg_stream_ptr)
-        delete cfg_stream_ptr;
+    for (int i = 0; i < options.n_betas(); i++)
+        if (cfg_stream_ptrs[i])
+            delete cfg_stream_ptrs[i];
 
     return 0;
 }
