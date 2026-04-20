@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
         }
         if ((corr_freq > 0) && (i + 1) % corr_freq == 0) {
             std::fill_n(cor_function.begin(), Lx, 0.0);
-            correlation<double>(ising, cor_function);
+            correlation(ising, cor_function);
             correlations.write(reinterpret_cast<char*>(cor_function.data()), cor_function.size() * sizeof(double));
         }
 

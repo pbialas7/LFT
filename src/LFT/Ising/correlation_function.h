@@ -9,7 +9,7 @@
 
 #include "ising.h"
 
-template<typename Float, typename F, typename A>
+template<typename F, typename A>
 void correlation(const F &f, A &out) {
     auto lat = f.lat;
     if (lat.dims[0] != lat.dims[1]) {
@@ -21,16 +21,16 @@ void correlation(const F &f, A &out) {
 
     auto n = lat.dims[0];
     auto L = lat.dims[0];
-    for (int i = 0; i < lat.dims[0]; ++i)
-        for (int j = 0; j < n; ++j)
-            for (int k = 0; k < n; k++) {
+    for (unsigned int i = 0; i < lat.dims[0]; ++i)
+        for (unsigned int j = 0; j < n; ++j)
+            for (auto k = 0; k < n; k++) {
                 auto r = j + k;
                 r = r < L ? r : r - L;
                 out[k] += (f[{i, r}]) * (f[{i, j}]);
             }
 
-    for (int i = 0; i < lat.dims[0]; ++i)
-        for (int j = 0; j < L; ++j)
+    for (unsigned  i = 0; i < lat.dims[0]; ++i)
+        for (unsigned j = 0; j < L; ++j)
             for (int k = 0; k < n; k++) {
                 auto r = j + k;
                 r = r < L ? r : r - L;

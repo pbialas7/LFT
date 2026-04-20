@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.14.5
+      jupytext_version: 1.18.1
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -27,11 +27,9 @@ import re
 ```
 
 ```{python}
+import sys
+sys.path.append('..')
 import stats_utils as su
-```
-
-```{python}
-15*50/60
 ```
 
 ```{python}
@@ -39,7 +37,7 @@ su.xi(2.079)
 ```
 
 ```{python}
-data_dir ='data2'
+data_dir ='mc_data'
 ```
 
 ```{python}
