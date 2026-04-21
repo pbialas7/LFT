@@ -22,7 +22,7 @@ data_dir ='mc_data'
 ```
 
 ```{python}
-name = '16x16_b0400'
+name = '16x16_b0460'
 ```
 
 ```{python}
@@ -42,8 +42,9 @@ from neumc.utils.stats_utils import ac_and_tau_int
 ```
 
 ```{python}
-tau, ac = ac_and_tau_int(em[:,1], maxlen=4000)
-print(tau)
+d=10
+tau, ac = ac_and_tau_int(em[::d,1], maxlen=5000)
+print(tau*d)
 ```
 
 ```{python}
@@ -51,7 +52,39 @@ plt.scatter(np.arange(len(ac)), ac,s=1);
 ```
 
 ```{python}
-np.log(1+np.sqrt(2))/2
+bc = np.log(1+np.sqrt(2))/2
+```
+
+```{python}
+betas = [0.1,0.2,0.3,0.4, 0.41, 0.42, 0.43,0.44, 0.4406, 0.440687]
+taus= [0.83, 1.73, 5.5,73,117, 192, 403,690,725,768]
+```
+
+```{python}
+plt.scatter(betas, taus);
+plt.axvline(bc);
+plt.xlabel('$\\beta$', fontsize=16);
+plt.tight_layout()
+plt.ylabel('$\\tau_{int}$', fontsize=16, rotation=True, labelpad=16);
+plt.savefig('tau.pdf', bbox_inches='tight', pad_inches=0);
+```
+
+```{python}
+bt = np.stack((betas,taus), axis=1)
+```
+
+```{python}
+plt.scatter(bt[:,0],1/(2*bt[:,1]));
+plt.axvline(bc);
+plt.xlabel('$\\beta$', fontsize=16);
+plt.tight_layout()
+plt.ylabel('$ESS$', fontsize=16, rotation=True, labelpad=16);
+plt.grid();
+plt.savefig('ess.pdf', bbox_inches='tight', pad_inches=0);
+```
+
+```{python}
+bt.shape
 ```
 
 ```{python}
