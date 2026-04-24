@@ -25,8 +25,8 @@ int main(int argc, char* argv[]) {
     double beta = 0.0;
     std::string name;
     std::string data_dir{"."};
-    int meas_freq = 10;
-    int corr_freq = 10;
+    int meas_freq = 0;
+    int corr_freq = 0;
     int save_freq = 0;
     bool wolff = false;
     int n_clusters = 16;
@@ -59,6 +59,11 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error in command line: " << results.message() << std::endl;
         return 1;
     }
+
+    if (Lx <= 0 || Ly <= 0) {
+        spdlog::error("Lx and Ly must be greater than 0");
+        exit(0);
+    }
     std::mt19937_64 rng(seed);
     spdlog::default_logger()->set_level(spdlog::level::warn);
 
@@ -71,7 +76,7 @@ int main(int argc, char* argv[]) {
     }
 
     using lattice_t = lft::Lattice<uint32_t>;
-    lattice_t lat({Lx, Ly},'C');
+    lattice_t lat({Lx, Ly}, 'C');
     ising::IsingField<lattice_t> ising(lat, 1);
     // ReSharper disable once CppDFAConstantConditions
     if (!cold_start)
@@ -145,7 +150,7 @@ int main(int argc, char* argv[]) {
             c += sweep(ising, update);
 
         if ((meas_freq > 0) && (i + 1) % meas_freq == 0) {
-            energy_mag << ising::energy<double>(ising) << " " << ising::magnetisation<double>(ising)
+            energy_mag << ising::E(ising) << " " << ising::M(ising)
                 << " " << c_size << std::endl;
         }
         if ((corr_freq > 0) && (i + 1) % corr_freq == 0) {
@@ -158,9 +163,9 @@ int main(int argc, char* argv[]) {
         if ((save_freq > 0) && (i + 1) % save_freq == 0) {
             configurations.write(reinterpret_cast<const char*>(ising.data()),
                                  ising.n_elements * sizeof(ising::IsingField<lattice_t>::field_t));
-            extract_edges(ising, edges);
-            edges_stream.write(reinterpret_cast<const char*>(edges.data()),
-                               edges.size() * sizeof(decltype(ising)::field_t));
+            // extract_edges(ising, edges);
+            // edges_stream.write(reinterpret_cast<const char*>(edges.data()),
+            //                    edges.size() * sizeof(decltype(ising)::field_t));
         }
     }
 
