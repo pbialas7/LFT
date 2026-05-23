@@ -84,6 +84,29 @@ namespace lft::ea {
             return 1;
         }
 
+        template <typename R, typename UDist>
+        size_t update_with_dist(field_class& field, size_t i, R& rng, UDist& u) {
+            auto r = std::log(F(1.0) / u(rng) - F(1.0));
+            F corona = 0.0;
+            for (auto d = 0; d < L::DIM; ++d) {
+                auto idx = i + field.lat.n_elements * d;
+                corona += field[field.lat.up(i, d)] * j_[idx];
+            }
+
+            for (auto d = 0; d < L::DIM; ++d) {
+                auto dn_site = field.lat.dn(i, d);
+                auto idx = dn_site + field.lat.n_elements * d;
+                corona += field[dn_site] * j_[idx];
+            }
+
+            F r_p_up = -F(2.0) * beta_ * corona;
+
+            if (r > r_p_up)
+                field[i] = 1;
+            else
+                field[i] = -1;
+            return 1;
+        }
 
         template <typename R>
         size_t operator()(field_class& field, size_t i, R& rng) {
@@ -112,18 +135,22 @@ namespace lft::ea {
         template <typename SWEEP_RNG>
         size_t sweep_mt(SpinField<L>& field, SWEEP_RNG& rng) {
             size_t accepted = 0;
-#pragma omp parallel for reduction(+:accepted) shared(rng)
-            for (size_t i = 0; i < field.lat.n_elements / 2; i++) {
-                auto t = omp_get_thread_num();
-                auto site = field.lat.even(i);
-                accepted += update(field, site, rng[t]);
-            }
+#pragma omp parallel shared(field, rng) reduction(+:accepted)
+            {
+                const int t = omp_get_thread_num();
+                auto& rng_t = rng[t];
+                std::uniform_real_distribution<F> u_local;
+#pragma omp  for  schedule(static)
+                for (size_t i = 0; i < field.lat.n_elements / 2; i++) {
+                    auto site = field.lat.even(i);
+                    accepted += update_with_dist(field, site, rng_t, u_local);
+                }
 
-#pragma omp parallel for reduction(+:accepted) shared(rng)
-            for (auto i = 0; i < field.lat.n_elements / 2; i++) {
-                auto t = omp_get_thread_num();
-                auto site = field.lat.odd(i);
-                accepted += update(field, site, rng[t]);
+#pragma omp parallel for  shared(rng) schedule(static)
+                for (auto i = 0; i < field.lat.n_elements / 2; i++) {
+                    auto site = field.lat.odd(i);
+                    accepted += update_with_dist(field, site, rng_t, u_local);
+                }
             }
             return accepted;
         }
