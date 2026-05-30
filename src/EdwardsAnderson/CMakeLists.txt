@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 project(EdwardsAnderson LANGUAGES CXX)
 
 
-
-add_executable(ea ea_main.cpp ea.h
+set(SRC_COMMON
+        ea.h
         ../utils/fs.h
         ../utils/fs.cpp
         ../utils/hardware.cpp
@@ -11,11 +11,24 @@ add_executable(ea ea_main.cpp ea.h
         options.cpp
         options.h
         ../utils/logging.cpp
-        ../utils/logging.h
+        ../utils/logging.h)
+
+add_executable(ea ea_main.cpp ea.h
+        parallel_tempering.h
+        parallel_tempering.cpp
+        ${SRC_COMMON}
 )
 target_link_libraries(ea PRIVATE yaml-cpp::yaml-cpp lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
 target_include_directories(ea PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_options(ea PRIVATE -g -fno-omit-frame-pointer)
-message(${CMAKE_INSTALL_PREFIX})
 
 
+
+add_executable(ea_pt_mt ea_main_pt_mt.cpp
+        parallel_tempering_mt.h
+        parallel_tempering_mt.cpp
+        ${SRC_COMMON}
+)
+target_link_libraries(ea_pt_mt PRIVATE yaml-cpp::yaml-cpp lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
+target_include_directories(ea_pt_mt PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_compile_options(ea_pt_mt PRIVATE -g -fno-omit-frame-pointer)
