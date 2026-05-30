@@ -33,3 +33,6 @@ perf.*
 *.zip
 notebooks/EdwardsAnderson/Transformers/cfgs
 notebooks/EdwardsAnderson/Transformers/numpy
+
+ea_pt_mt_test/
+ea_test/
