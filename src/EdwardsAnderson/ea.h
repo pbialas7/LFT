@@ -140,18 +140,18 @@ namespace lft::ea {
                 const int t = omp_get_thread_num();
                 auto& rng_t = rng[t];
                 std::uniform_real_distribution<F> u_local;
-#pragma omp  for  schedule(static)
+#pragma omp  parallel for  shared(rng) schedule(static)
                 for (size_t i = 0; i < field.lat.n_elements / 2; i++) {
                     auto site = field.lat.even(i);
                     accepted += update_with_dist(field, site, rng_t, u_local);
                 }
 
-#pragma omp  for schedule(static)
+#pragma omp parallel for  shared(rng) schedule(static)
                 for (auto i = 0; i < field.lat.n_elements / 2; i++) {
                     auto site = field.lat.odd(i);
                     accepted += update_with_dist(field, site, rng_t, u_local);
                 }
-            } // omp parallel
+            }
             return accepted;
         }
 
