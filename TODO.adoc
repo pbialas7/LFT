@@ -1,0 +1,4 @@
+* Clean up code and documentation.
+* Parallelize EA on the level of the parallel tempering chains.
+* 3D for EA model.
+

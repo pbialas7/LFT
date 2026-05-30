@@ -119,7 +119,7 @@ namespace lft::rand {
             return std::numeric_limits<result_type>::max();
         }
 
-        taus_array(int n) : random_array_state<unsigned int, 4, 256>(n) {
+        taus_array(unsigned int n) : random_array_state<unsigned int, 4, 256>(n) {
             gen_seeds(121245);
             taus_.reserve(n);
             for (int i = 0; i < n; ++i) {
@@ -141,8 +141,7 @@ namespace lft::rand {
 
         class taus {
         public:
-            taus(int i, taus_array* array) : i_(i), array_(array) {
-            }
+            taus(int i, taus_array* array) : i_(i), array_(array) {}
 
             using result_type = taus_array::result_type;
 

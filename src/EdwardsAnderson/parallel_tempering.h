@@ -11,8 +11,7 @@
 namespace lft::ea {
     template <typename L>
     struct Replicas {
-        Replicas(int q) : q(q), replica(q, nullptr) {
-        }
+        Replicas(int q) : q(q), replica(q, nullptr) {}
 
         ~Replicas() {
             for (int i = 0; i < q; ++i) {
@@ -55,7 +54,7 @@ namespace lft::ea {
     template <typename L>
     struct ParallelTempering {
         ParallelTempering(int q, int n, const std::vector<float>& betas,
-                          const JField<float, L>& J_a) : q(q), replicas(n, Replicas<L>(q)), betas(betas), J(J_a),
+                          const JField<float, L>& J_a) : q(q), chains(n, Replicas<L>(q)), betas(betas), J(J_a),
                                                          heath_bath(n, J_a), accepted_v(n, 0), exchange_v(n, 0),
                                                          u(0.0, 1.0) {
             assert(betas.size() == n);
@@ -69,7 +68,7 @@ namespace lft::ea {
             size_t acceptance = 0;
             for (int i = 0; i < n_sweeps; ++i) {
                 for (int j = 0; j < betas.size(); j++)
-                    replicas[j].sweep_mt(n_sweeps, heath_bath[j], rng);
+                    chains[j].sweep_mt(n_sweeps, heath_bath[j], rng);
             }
             return acceptance;
         }
@@ -79,7 +78,7 @@ namespace lft::ea {
             size_t acceptance = 0;
             for (int i = 0; i < n_sweeps; ++i) {
                 for (int j = 0; j < betas.size(); j++)
-                    replicas[j].sweep_t1(n_sweeps, heath_bath[j], rng);
+                    chains[j].sweep_t1(n_sweeps, heath_bath[j], rng);
             }
             return acceptance;
         }
@@ -91,14 +90,14 @@ namespace lft::ea {
             float b1 = betas[i_b1];
             float b2 = betas[i_b2];
             spdlog::trace("Exchange {} {}", b1, b2);
-            spdlog::trace("Exchange {} {}", (const void*)replicas[i_b1][i_r], (const void*)replicas[i_b2][i_r]);
-            float E1 = energy<float>(*replicas[i_b1][i_r], J);
-            float E2 = energy<float>(*replicas[i_b2][i_r], J);
+            spdlog::trace("Exchange {} {}", (const void*)chains[i_b1][i_r], (const void*)chains[i_b2][i_r]);
+            float E1 = energy<float>(*chains[i_b1][i_r], J);
+            float E2 = energy<float>(*chains[i_b2][i_r], J);
             float delta = (E1 - E2) * (b1 - b2);
             auto r = u(rng);
 
             if (r < std::exp(delta)) {
-                std::swap(replicas[i_b1][i_r], replicas[i_b2][i_r]);
+                std::swap(chains[i_b1][i_r], chains[i_b2][i_r]);
                 return 1;
             }
 
@@ -138,7 +137,7 @@ namespace lft::ea {
 
         int q;
         std::uniform_real_distribution<float> u;
-        std::vector<Replicas<L>> replicas;
+        std::vector<Replicas<L>> chains;
         std::vector<float> betas;
         JField<float, L> J;
         std::vector<HeathBath<float, L>> heath_bath;
