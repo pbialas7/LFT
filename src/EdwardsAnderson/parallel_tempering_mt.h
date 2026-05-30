@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <iostream>
+
 #include "ea.h"
 #include <spdlog/spdlog.h>
 
@@ -54,9 +56,9 @@ namespace lft::ea {
     template <typename L>
     struct ParallelTemperingMT {
         ParallelTemperingMT(int q, int n, const std::vector<float>& betas,
-                          const JField<float, L>& J_a) : q(q), chains(n, Replicas<L>(q)), betas(betas), J(J_a),
-                                                         heath_bath(n, J_a), accepted_v(n, 0), exchange_v(n, 0),
-                                                         u(0.0, 1.0) {
+                            const JField<float, L>& J_a) : q(q), chains(n, Replicas<L>(q)), betas(betas), J(J_a),
+                                                           heath_bath(n, J_a), accepted_v(n, 0), exchange_v(n, 0),
+                                                           u(0.0, 1.0) {
             assert(betas.size() == n);
             for (int i = 0; i < n; ++i) {
                 heath_bath[i].set_beta(betas[i]);
@@ -130,7 +132,15 @@ namespace lft::ea {
             return accepted;
         }
 
-        void reset() {
+        void print_stats(std::ostream& os) {
+            os<<std::format("Exchange acceptance rates:\n");
+            for (auto i = 0; i < betas.size() - 1; i++) {
+                os << std::format("{:.3f}->{:.3f} {:.2f}", betas[i], betas[i + 1],
+                                  (double)accepted_v[i] / exchange_v[i]) << std::endl;
+            }
+        }
+
+        void reset_stats() {
             std::fill(accepted_v.begin(), accepted_v.end(), 0);
             std::fill(exchange_v.begin(), exchange_v.end(), 0);
         }

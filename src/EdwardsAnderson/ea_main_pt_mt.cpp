@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
     // Creating Parallel tempering updater. It creates inside n_betas simulation chains, each with n_replicas replicas
     // All chains and replicas share same link variables.
     lft::ea::ParallelTemperingMT<lattice_t> temperer(n_replicas, options.n_betas(),
-                                                   options.beta, j_field);
+                                                     options.beta, j_field);
 
     // Initializes each replica either randomly with +/-1 (hot start) or 1 (cold start).
     for (int i = 0; i < options.n_betas(); ++i) {
@@ -149,16 +149,9 @@ int main(int argc, char* argv[]) {
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
     spdlog::info("Thermalization took {:.3} seconds", elapsed_term_seconds.count());
-
-    if (options.exchange_freq > 0) {
-        spdlog::info("Exchange acceptance rates:");
-        for (auto i = 0; i < options.n_betas() - 1; i++) {
-            std::cout << std::format("{:.3f}->{:.3f} {:.2f}", options.beta[i], options.beta[i + 1],
-                                     (double)temperer.accepted_v[i] / temperer.exchange_v[i]) <<
-                std::endl;
-        }
-    }
-    temperer.reset();
+    if (options.exchange_freq > 0)
+        temperer.print_stats(std::cout);
+    temperer.reset_stats();
 
     // Creating output files
 
@@ -215,15 +208,9 @@ int main(int argc, char* argv[]) {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     spdlog::info("Sweeps took {:.3} seconds", elapsed_seconds.count());
-    if (options.exchange_freq > 0) {
-        spdlog::info("Exchange acceptance rates:");
-        for (auto i = 0; i < options.n_betas() - 1; i++) {
-            std::cout << std::format("{:.3f}->{:.3f} {:.2f}", options.beta[i], options.beta[i + 1],
-                                     (double)temperer.accepted_v[i] / temperer.exchange_v[i]) <<
-                std::endl;
-        }
-    }
-    temperer.reset();
+    if (options.exchange_freq > 0)
+        temperer.print_stats(std::cout);
+    temperer.reset_stats();
 
     // Close files (delete the pointers)
     for (int i = 0; i < options.n_betas(); i++)
