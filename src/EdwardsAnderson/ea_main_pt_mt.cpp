@@ -181,10 +181,8 @@ int main(int argc, char* argv[]) {
         else
             temperer.sweep_t1(1, taus_rng[0]);
 
-
         if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
-            for (int j = 0; j < n_replicas; ++j)
-                temperer.exchange(j, rng);
+            temperer.exchange(rng);
         }
 
 

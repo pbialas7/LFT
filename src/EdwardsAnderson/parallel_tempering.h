@@ -29,9 +29,9 @@ namespace lft::ea {
 
 
         template <typename RNG>
-        size_t sweep_t1(int n, HeathBath<float, L>& heath_bath, RNG& rng) {
+        size_t sweep_t1(int n_sweeps, HeathBath<float, L>& heath_bath, RNG& rng) {
             size_t acceptance = 0;
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n_sweeps; ++i) {
                 for (int j = 0; j < q; ++j) {
                     acceptance += heath_bath.sweep(*replica[j], rng);
                 }

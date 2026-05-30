@@ -31,22 +31,11 @@ namespace lft::ea {
 
 
         template <typename RNG>
-        size_t sweep_t1(int n, HeathBath<float, L>& heath_bath, RNG& rng) {
+        size_t sweep_t1(int n_sweeps, HeathBath<float, L>& heath_bath, RNG& rng) {
             size_t acceptance = 0;
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n_sweeps; ++i) {
                 for (int j = 0; j < q; ++j) {
                     acceptance += heath_bath.sweep(*replica[j], rng);
-                }
-            }
-            return acceptance;
-        }
-
-        template <typename RNG>
-        size_t sweep_mt(int n, HeathBath<float, L>& heath_bath, RNG& rng) {
-            size_t acceptance = 0;
-            for (int i = 0; i < n; ++i) {
-                for (int j = 0; j < q; ++j) {
-                    acceptance += heath_bath.sweep_mt(*replica[j], rng);
                 }
             }
             return acceptance;
@@ -65,22 +54,22 @@ namespace lft::ea {
             }
         }
 
-        template <typename RNG>
-        size_t sweep_mt(int n_sweeps, RNG& rng) {
-            size_t acceptance = 0;
-            for (int i = 0; i < n_sweeps; ++i) {
-                for (int j = 0; j < betas.size(); j++)
-                    chains[j].sweep_mt(n_sweeps, heath_bath[j], rng);
-            }
-            return acceptance;
-        }
 
         template <typename RNG>
         size_t sweep_t1(int n_sweeps, RNG& rng) {
             size_t acceptance = 0;
-            for (int i = 0; i < n_sweeps; ++i) {
-                for (int j = 0; j < betas.size(); j++)
-                    chains[j].sweep_t1(n_sweeps, heath_bath[j], rng);
+            for (int j = 0; j < betas.size(); j++)
+                chains[j].sweep_t1(n_sweeps, heath_bath[j], rng);
+            return acceptance;
+        }
+
+        template <typename RNG>
+        size_t sweep_mt(int n_sweeps, RNG& rng) {
+            size_t acceptance = 0;
+#pragma omp parallel for shared(rng) reduction(+: acceptance) schedule(static)
+            for (int j = 0; j < betas.size(); j++) {
+                auto t = omp_get_thread_num();
+                chains[j].sweep_t1(n_sweeps, heath_bath[j], rng[t]);
             }
             return acceptance;
         }
@@ -133,7 +122,7 @@ namespace lft::ea {
         }
 
         void print_stats(std::ostream& os) {
-            os<<std::format("Exchange acceptance rates:\n");
+            os << std::format("Exchange acceptance rates:\n");
             for (auto i = 0; i < betas.size() - 1; i++) {
                 os << std::format("{:.3f}<->{:.3f} {:.2f}", betas[i], betas[i + 1],
                                   (double)accepted_v[i] / exchange_v[i]) << std::endl;
