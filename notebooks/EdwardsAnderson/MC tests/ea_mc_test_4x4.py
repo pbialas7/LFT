@@ -1,25 +1,16 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: Python 3 (ipykernel)
-#     language: python
-#     name: python3
-# ---
-
 # %%
-# %load_ext autoreload
-# %autoreload 2
+import argparse
 
-# %%
+from rich import print
+from rich.console import Console
+
+console = Console()
+
 import numpy as np
+from scipy.stats import norm
+
 import torch
-import matplotlib.pyplot as plt
+
 
 # %%
 import yaml
@@ -34,14 +25,34 @@ from dneumc.ising.ising import fast_gen_states
 from dneumc.ising.ea import Energy
 
 # %%
-from neumc.utils.stats_utils import bootstrap, ac_and_tau_int, torch_bootstrap
+from neumc.utils.stats_utils import ac_and_tau_int, torch_bootstrap
+
+def compare(val, err, val_th):
+    diff = val-val_th
+    s = np.abs(diff)/err
+    p = 2*norm.sf(s)
+    if p <0.01:
+        print(f'[red]{diff:.4f} {err:.4f} {p:.2e}[/red]|', end='')
+    else:
+        print(f'{diff:.4f} {err:.4f} {p:.2e}|', end='')
+
+
 
 # %%
 ea_dir = '../../../ea_pt_mt_test'
 
 # %%
-Lx = 4
-Ly = 6
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--Lx', type=int, required=True)
+parser.add_argument('--Ly', type=int, required=True)
+parser.add_argument('--n_replicas', type=int, default=2)
+parser.add_argument('--tag', type=str, required=True)
+args = parser.parse_args()
+
+Lx = args.Lx
+Ly = args.Ly
+tag = args.tag
 
 # %%
 spins = fast_gen_states(Lx*Ly).view(-1,Lx,Ly)
@@ -50,7 +61,7 @@ spins = fast_gen_states(Lx*Ly).view(-1,Lx,Ly)
 n_replicas = 2
 
 # %%
-name =f'{Lx:02d}x{Ly:02d}_bxxxx_ex01'
+name =f'{Lx:02d}x{Ly:02d}_{tag}'
 
 # %%
 with open(f"{ea_dir}/opt_{name}.yaml", "r") as f:
@@ -89,9 +100,7 @@ for i,beta in enumerate(betas):
     print('E ',end='')
     for r in range(n_replicas):
         e_val, e_err = torch_bootstrap(em[:,2*r],n_samples=200, binsize=10)
-        print(f"{e_val-e_th:.4f} {e_err:.4f} ",end='')
-        if np.abs(e_val.item()-e_th.item())/e_err.item() >3 :
-            print('3 sigma disrepancy in energy')
+        compare(e_val.item(), e_err.item(), e_th.item())
     print()    
 
     mag = spins.sum((-1,-2))
@@ -99,9 +108,7 @@ for i,beta in enumerate(betas):
     print('M ',end='')
     for r in range(n_replicas):
         am_val, am_err = torch_bootstrap(torch.abs(em[:,2*r+1]),n_samples=200, binsize=10)
-        print(f"{am_val-am_th:.4f} {am_err:.4f} ",end='')
-        if np.abs(am_val.item()-am_th.item())/am_err.item() >3 :
-            print('3 sigma disrepancy in |M|')
+        compare(am_val.item(), am_err.item(), am_th.item())
     print()  
         
         

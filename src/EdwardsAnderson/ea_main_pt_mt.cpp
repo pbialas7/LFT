@@ -119,12 +119,12 @@ int main(int argc, char* argv[]) {
     //Creating chains and replicas
     if (options.two_replicas)
         n_replicas = 2;
-    // Creating Parallel tempering updater. It creates inside n_betas simulation chains, each with n_replicas replicas
+    // Creating Parallel tempering updater.
     // All chains and replicas share same link variables.
     lft::ea::ParallelTemperingMT<lattice_t> temperer(n_replicas, options.n_betas(),
                                                      options.beta, j_field);
 
-    // Initializes each replica either randomly with +/-1 (hot start) or 1 (cold start).
+    // Created and initializes each replica either randomly with +/-1 (hot start) or 1 (cold start).
     for (int i = 0; i < options.n_betas(); ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             temperer.chains[i][j] = new lft::ea::SpinField(lat, 1);

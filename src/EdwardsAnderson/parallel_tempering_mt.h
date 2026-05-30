@@ -135,7 +135,7 @@ namespace lft::ea {
         void print_stats(std::ostream& os) {
             os<<std::format("Exchange acceptance rates:\n");
             for (auto i = 0; i < betas.size() - 1; i++) {
-                os << std::format("{:.3f}->{:.3f} {:.2f}", betas[i], betas[i + 1],
+                os << std::format("{:.3f}<->{:.3f} {:.2f}", betas[i], betas[i + 1],
                                   (double)accepted_v[i] / exchange_v[i]) << std::endl;
             }
         }

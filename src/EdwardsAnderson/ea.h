@@ -146,12 +146,12 @@ namespace lft::ea {
                     accepted += update_with_dist(field, site, rng_t, u_local);
                 }
 
-#pragma omp parallel for  shared(rng) schedule(static)
+#pragma omp  for schedule(static)
                 for (auto i = 0; i < field.lat.n_elements / 2; i++) {
                     auto site = field.lat.odd(i);
                     accepted += update_with_dist(field, site, rng_t, u_local);
                 }
-            }
+            } // omp parallel
             return accepted;
         }
 
