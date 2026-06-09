@@ -44,7 +44,7 @@ namespace lft::ea {
                 | lyra::opt(meas_freq, "measure frequency")["--meas-freq"]("measure save frequency")
                 | lyra::opt(ising)["--ising"]("Set J = 1")
                 | lyra::opt(binary)["--binary"]("Sets J =+/-1")
-                | lyra::opt(two_replicas)["-q"]["--two-replicas"]("Simulates two replicas.")
+                | lyra::opt(n_replicas, "n_replicas")["-q"]["--n-replicas"]("Simulates n replicas.")
                 | lyra::opt(j_file_path, "J file")["-j"]["--j-file"]("File with link variables")
                 | lyra::opt(spdlog_level, "spdlog level")["--level"]("Sets the spdlog level")
                 | lyra::opt(n_threads, "N threads")["--n-threads"]("Set number of threads to use")
@@ -84,7 +84,6 @@ namespace lft::ea {
         int meas_freq = 0;
         bool ising = false;
         bool binary = false;
-        bool two_replicas = false;
         std::string j_file_path;
         int n_replicas = 1;
         std::string spdlog_level;

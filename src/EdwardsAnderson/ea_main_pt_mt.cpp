@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 
     lft::ea::Options options(argc, argv);
 
-    int n_replicas = 1;
+    int n_replicas = options.n_replicas;
 
     auto options_stream = std::fstream(
         make_file_path(options.data_dir, "opt", options.name, "yaml"),
@@ -115,8 +115,7 @@ int main(int argc, char *argv[]) {
     j_file.close();
 
     //Creating chains and replicas
-    if (options.two_replicas)
-        n_replicas = 2;
+
 
     spdlog::info("Using {} betas {} with replicas", options.n_betas(), n_replicas);
 
