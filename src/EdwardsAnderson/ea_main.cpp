@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
     j_file.close();
 
     //Creating chains and replicas
-    if (options.two_replicas)
+    if (options.n_replicas > 1)
         n_replicas = 2;
     // Creating Parallel tempering updater. It creates inside n_betas simulation chains, each with n_replicas replicas
     // All chains and replicas share same link variables.

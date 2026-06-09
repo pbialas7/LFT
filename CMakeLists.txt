@@ -48,6 +48,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
+
+FetchContent_Declare(
+        CLI11
+        GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+        GIT_TAG main
+)
+FetchContent_MakeAvailable(CLI11)
+
 if (APPLE)
     if (EXISTS "/opt/homebrew/opt/libomp") # Apple Silicon
         set(OpenMP_ROOT "/opt/homebrew/opt/libomp")

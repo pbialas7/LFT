@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 #include "MonteCarlo/sweep.h"
 #include "ea.h"
 #include "parallel_tempering_mt.h"
-#include "options.h"
+#include "options_cli11.h"
 
 
 /**
@@ -77,7 +77,8 @@ void measure_em(std::fstream *em_stream_ptr,
 int main(int argc, char *argv[]) {
     auto max_threads = std::thread::hardware_concurrency();
 
-    lft::ea::Options options(argc, argv);
+    lft::ea::Options options;
+    options.parse(argc, argv);
 
     int n_replicas = options.n_replicas;
 
