@@ -79,9 +79,16 @@ int main(int argc, char *argv[]) {
 
     lft::ea::Options options;
     options.parse(argc, argv);
+    spdlog::info("data_dir after parse: '{}'", options.data_dir);
+
+    if (options.beta.empty()) {
+        spdlog::error("No betas specified");
+        return 1;
+    }
 
     int n_replicas = options.n_replicas;
 
+    spdlog::info("Writing to data dir = {}", options.data_dir);
     auto options_stream = std::fstream(
         make_file_path(options.data_dir, "opt", options.name, "yaml"),
         std::ios::out

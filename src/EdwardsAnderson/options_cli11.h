@@ -68,7 +68,7 @@ namespace lft::ea {
             app.add_option("--level", spdlog_level, "Sets the spdlog level");
             app.add_option("--n-threads", n_threads, "Set number of threads to use");
             app.add_option("--exchange-freq", exchange_freq, "Replicas exchange frequency");
-            app.add_option("--beta", raw_betas, "Comma-separated list of betas for parallel tempering");
+            app.add_option("--beta", beta, "ist of betas for parallel tempering");
 
 
             // class member
@@ -86,17 +86,6 @@ namespace lft::ea {
 
             if (debug) spdlog_level = "debug";
 
-            try {
-                beta = split_floats(raw_betas);
-            } catch (const std::exception &e) {
-                spdlog::error("Invalid --beta '{}': {}", raw_betas, e.what());
-                return 1;
-            }
-
-            if (beta.empty()) {
-                spdlog::error("No betas specified in '{}'.", raw_betas);
-                return 1;
-            }
 
             return 0;
         }
