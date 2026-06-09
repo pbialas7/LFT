@@ -12,7 +12,7 @@ YAML::Emitter &lft::ea::Options::emit() {
     yaml << pair(Lx);
     yaml << pair(Ly);
     yaml << pair(save_freq);
-    yaml << pair(measure_freq);
+    yaml << pair(meas_freq);
     yaml << pair(n_term);
     yaml << pair(n_sweeps);
     yaml << pair(cold_start);

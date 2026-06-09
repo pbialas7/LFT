@@ -73,6 +73,8 @@ namespace lft::ea {
 
             // class member
             app.add_flag("--debug", debug, "Enable debug logging");
+
+            app.set_config("--config", "", "Path to optional config file");
         }
 
         int parse(int argc, char *argv[]) {
@@ -106,7 +108,6 @@ namespace lft::ea {
         uint32_t Lx = 0;
         uint32_t Ly = 0;
         int save_freq = 0;
-        int measure_freq = 0;
         int n_term = 0;
         int n_sweeps = 0;
         bool cold_start = false;

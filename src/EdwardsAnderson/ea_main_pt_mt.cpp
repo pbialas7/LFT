@@ -137,6 +137,8 @@ int main(int argc, char *argv[]) {
     /*********************
     * Thermalization loop
     *********************/
+    spdlog::info("Starting the thermalization loop with {} sweeps and exchange frequency {}", options.n_term,
+                 options.exchange_freq);
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < options.n_term; ++i) {
         if (options.n_threads > 1)
@@ -179,6 +181,9 @@ int main(int argc, char *argv[]) {
     /***********************
      * Main loop
      ***********************/
+    spdlog::info("Starting main loop with {} sweeps and exchange frequency {}", options.n_sweeps,
+                 options.exchange_freq);
+    spdlog::info("measure frequency {} configurations save frequency {}", options.meas_freq, options.save_freq);
     auto start_main_all = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> sweep_time(0.0);
     std::chrono::duration<double> exchange_time(0.0);
@@ -221,7 +226,7 @@ int main(int argc, char *argv[]) {
     spdlog::info("Sweeps loop  took {:.3} seconds", sweep_time.count());
     spdlog::info("Exchange took {:.3} seconds", exchange_time.count());
 
-    if (options.exchange_freq > 0)
+    if (options.exchange_freq > 0 && options.n_sweeps > 0)
         temperer.print_stats(std::cout);
     temperer.reset_stats();
 
