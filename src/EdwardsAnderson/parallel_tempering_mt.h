@@ -113,6 +113,7 @@ namespace lft::ea {
             return accepted;
         }
 
+
         template <typename RNG>
         size_t exchange(RNG& rng) {
             size_t accepted = 0;
@@ -120,6 +121,33 @@ namespace lft::ea {
                 accepted += exchange(j, rng);
             return accepted;
         }
+
+        template <typename RNG>
+        size_t exchange_mt(RNG& rng) {
+            size_t accepted = 0;
+#pragma omp parallel for shared(rng,accepted_v, exchange_v)  schedule(static)
+            for (int j = 0; j < betas.size() - 1; j += 2) {
+                auto t = omp_get_thread_num();
+                for (int i_r = 0; i_r < q; i_r++) {
+                    auto a = exchange(j, j + 1, i_r, rng[t]);
+                    accepted += a;
+                    accepted_v[j] += a;
+                    exchange_v[j]++;
+                }
+            }
+#pragma omp parallel for shared(rng,accepted_v, exchange_v)  schedule(static)
+            for (int j = 1; j < betas.size() - 1; j += 2) {
+                auto t = omp_get_thread_num();
+                for (int i_r = 0; i_r < q; i_r++) {
+                    auto a = exchange(j, j + 1, i_r, rng[t]);
+                    accepted += a;
+                    accepted_v[j] += a;
+                    exchange_v[j]++;
+                }
+            }
+            return accepted;
+        }
+
 
         void print_stats(std::ostream& os) {
             os << std::format("Exchange acceptance rates:\n");

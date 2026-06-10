@@ -182,7 +182,10 @@ int main(int argc, char* argv[]) {
             temperer.sweep_t1(1, taus_rng[0]);
 
         if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
-            temperer.exchange(rng);
+            if (options.n_threads > 1)
+                temperer.exchange_mt(taus_rng);
+            else
+                temperer.exchange(taus_rng[0]);
         }
 
 
