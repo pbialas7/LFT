@@ -71,6 +71,42 @@ def hist_int(a,*,bin_width,**kwargs):
 ```
 
 ```{python}
+J_t = np.loadtxt(run_path/"J_64x64_new_05.txt")
+```
+
+```{python}
+Lx = 64
+Ly = 64
+```
+
+```{python}
+tag = "run_01_J5_small"
+```
+
+```{python}
+name = f"{Lx:03d}x{Ly:03d}_{tag}"
+```
+
+```{python}
+options = tu.read_options(data_path, name)    
+n_betas=len(options['beta'])
+print(options['beta'])
+```
+
+```{python}
+J = np.loadtxt(data_path/f"j_{name}.txt")
+```
+
+```{python}
+np.allclose(J_t,J) 
+```
+
+```{python}
+em = tu.read_em_files(data_path, name, options['beta'])
+em.shape
+```
+
+```{python}
 Lx = 64
 Ly = 64
 ```
@@ -103,9 +139,6 @@ np.allclose(J_t,J)
 
 ```{python}
 em = tu.read_em_files(data_path, name, options['beta'])
-```
-
-```{python}
 em.shape
 ```
 
@@ -124,6 +157,7 @@ for i in range(n_betas):
 ```{python}
 plt.scatter(options['beta'], taus1); 
 plt.scatter(options['beta'], taus2); 
+plt.grid();
 ```
 
 ```{python}
@@ -131,6 +165,45 @@ for i in range(n_betas):
   hist_int(em[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}")
 #plt.legend();  
 ```
+
+```{python}
+engs = em[:,:,0].mean(1).numpy()
+stds = em[:,:,0].std(1).numpy()
+```
+
+```{python}
+plt.scatter(options['beta'], engs);
+```
+
+```{python}
+plt.scatter(options['beta'], stds);
+```
+
+```{python}
+def overlap(a,b):
+  (m1,s1)=a
+  (m2,s2)=b
+  exp = (m1-m2)**2/(s1**2+s2**2)
+  return np.sqrt(2)*np.exp(-exp/4)*np.sqrt(s1*s2/(s1**2+s2**2))
+```
+
+```{python}
+pairs = list(zip(engs,stds))
+```
+
+```{python}
+overlap = [overlap(pairs[i], pairs[i+1]).item() for i in range(len(pairs)-1)]
+```
+
+```{python}
+exch=np.loadtxt(data_path/"exch_064x064_run_01_J5.txt")
+```
+
+```{python}
+plt.scatter(overlap, exch[:,2])
+```
+
+## Overlap
 
 ```{python}
 qs = [em[i ][:,4].mean() for i in range(n_betas)]
@@ -185,6 +258,11 @@ em.shape
 ```{python}
 tau, _, = ac_and_tau_int(em[0,:,1].numpy()); 
 tau
+```
+
+```{python}
+for b in np.arange(0.3,1.91, 0.025):
+  print(f"{b:5.3f},")
 ```
 
 ```{python}
