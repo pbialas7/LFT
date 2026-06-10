@@ -26,7 +26,11 @@ project_path = Path.home()/"Projects/LFT"
 ```
 
 ```{python}
-data_path = project_path/"EA_runs/data"
+run_path = project_path/"EA_runs"
+```
+
+```{python}
+data_path = run_path/"data"
 ```
 
 ```{python}
@@ -72,7 +76,11 @@ Ly = 64
 ```
 
 ```{python}
-tag = "run_001"
+J_t = np.loadtxt(run_path/"J_64x64_new_05.txt")
+```
+
+```{python}
+tag = "run_01_J5"
 ```
 
 ```{python}
@@ -83,6 +91,14 @@ name = f"{Lx:03d}x{Ly:03d}_{tag}"
 options = tu.read_options(data_path, name)    
 n_betas=len(options['beta'])
 print(options['beta'])
+```
+
+```{python}
+J = np.loadtxt(data_path/f"j_{name}.txt")
+```
+
+```{python}
+np.allclose(J_t,J) 
 ```
 
 ```{python}
