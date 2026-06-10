@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 #include "MonteCarlo/sweep.h"
 #include "ea.h"
 #include "parallel_tempering_mt.h"
-#include "options.h"
+#include "options_cli11.h"
 
 
 /**
@@ -28,8 +28,8 @@ namespace fs = std::filesystem;
  * If ising is true, it initializes with 1. If binary is true, it initializes with +/-1.
  * Otherwise, it initializes with Gaussian random numbers.
  */
-template <typename Field, typename RNG>
-void init_field(Field& field, const std::string& file_path, bool binary, bool ising, RNG& rng) {
+template<typename Field, typename RNG>
+void init_field(Field &field, const std::string &file_path, bool binary, bool ising, RNG &rng) {
     if (file_path.empty()) {
         if (!ising) {
             if (binary)
@@ -37,8 +37,7 @@ void init_field(Field& field, const std::string& file_path, bool binary, bool is
             else
                 lft::ea::init_gaussian(field, rng);
         }
-    }
-    else {
+    } else {
         std::ifstream ifs(file_path, std::ios::in);
         if (!ifs) {
             spdlog::error("Error opening file : {}", file_path);
@@ -57,9 +56,9 @@ void init_field(Field& field, const std::string& file_path, bool binary, bool is
 
 using lattice_t = lft::Lattice<uint32_t>;
 
-void measure_em(std::fstream* em_stream_ptr,
-                lft::ea::Replicas<lattice_t>& replicas,
-                const lft::ea::JField<float, lattice_t>& j_field) {
+void measure_em(std::fstream *em_stream_ptr,
+                lft::ea::Replicas<lattice_t> &replicas,
+                const lft::ea::JField<float, lattice_t> &j_field) {
     if (em_stream_ptr) {
         for (int j = 0; j < replicas.q; ++j) {
             *em_stream_ptr << lft::ea::energy<double>(*replicas[j], j_field) << " ";
@@ -68,21 +67,28 @@ void measure_em(std::fstream* em_stream_ptr,
         if (replicas.q > 1) {
             *em_stream_ptr << lft::ea::overlap<double>(*replicas[0], *replicas[1]) << " ";
             *em_stream_ptr << lft::ea::link_overlap<double>(*replicas[0], *replicas[1]) << "\n";
-        }
-        else
+        } else
             *em_stream_ptr << "\n";
         em_stream_ptr->flush();
     }
 }
 
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     auto max_threads = std::thread::hardware_concurrency();
 
-    lft::ea::Options options(argc, argv);
+    lft::ea::Options options;
+    options.parse(argc, argv);
+    spdlog::info("data_dir after parse: '{}'", options.data_dir);
 
-    int n_replicas = 1;
+    if (options.beta.empty()) {
+        spdlog::error("No betas specified");
+        return 1;
+    }
 
+    int n_replicas = options.n_replicas;
+
+    spdlog::info("Writing to data dir = {}", options.data_dir);
     auto options_stream = std::fstream(
         make_file_path(options.data_dir, "opt", options.name, "yaml"),
         std::ios::out
@@ -117,8 +123,10 @@ int main(int argc, char* argv[]) {
     j_file.close();
 
     //Creating chains and replicas
-    if (options.two_replicas)
-        n_replicas = 2;
+
+
+    spdlog::info("Using {} betas {} with replicas", options.n_betas(), n_replicas);
+
     // Creating Parallel tempering updater.
     // All chains and replicas share same link variables.
     lft::ea::ParallelTemperingMT<lattice_t> temperer(n_replicas, options.n_betas(),
@@ -133,7 +141,11 @@ int main(int argc, char* argv[]) {
     }
 
 
-    // Thermalization loop
+    /*********************
+    * Thermalization loop
+    *********************/
+    spdlog::info("Starting the thermalization loop with {} sweeps and exchange frequency {}", options.n_term,
+                 options.exchange_freq);
     auto start_term = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < options.n_term; ++i) {
         if (options.n_threads > 1)
@@ -156,7 +168,7 @@ int main(int argc, char* argv[]) {
     // Creating output files
 
     // Energy and magnetization
-    std::vector<std::fstream*> em_stream_ptrs(options.n_betas(), nullptr);
+    std::vector<std::fstream *> em_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         em_stream_ptrs[i] = optional_fstream_ptr(
             make_file_path(options.data_dir, "em",
@@ -165,7 +177,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Configuration files
-    std::vector<std::fstream*> cfg_stream_ptrs(options.n_betas(), nullptr);
+    std::vector<std::fstream *> cfg_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         cfg_stream_ptrs[i] = optional_fstream_ptr(
             make_file_path(options.data_dir, "cfg", options.name + std::format("_b{:02d}", i), "bin"),
@@ -173,21 +185,33 @@ int main(int argc, char* argv[]) {
     }
 
 
-    //Main loop
-    auto start = std::chrono::high_resolution_clock::now();
+    /***********************
+     * Main loop
+     ***********************/
+    spdlog::info("Starting main loop with {} sweeps and exchange frequency {}", options.n_sweeps,
+                 options.exchange_freq);
+    spdlog::info("measure frequency {} configurations save frequency {}", options.meas_freq, options.save_freq);
+    auto start_main_all = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> sweep_time(0.0);
+    std::chrono::duration<double> exchange_time(0.0);
     for (int i = 0; i < options.n_sweeps; ++i) {
+        auto start_main_sweep = std::chrono::high_resolution_clock::now();
         if (options.n_threads > 1)
             temperer.sweep_mt(1, taus_rng);
         else
             temperer.sweep_t1(1, taus_rng[0]);
+        auto end_main_sweep = std::chrono::high_resolution_clock::now();
+        sweep_time += std::chrono::duration<double>(end_main_sweep - start_main_sweep);
 
+        auto start_main_exchange = std::chrono::high_resolution_clock::now();
         if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
             if (options.n_threads > 1)
                 temperer.exchange_mt(taus_rng);
             else
                 temperer.exchange(taus_rng[0]);
         }
-
+        auto end_main_exchange = std::chrono::high_resolution_clock::now();
+        exchange_time += std::chrono::duration<double>(end_main_exchange - start_main_exchange);
 
         //Measurements
         if (options.meas_freq > 0 && (i % options.meas_freq) == 0) {
@@ -206,10 +230,13 @@ int main(int argc, char* argv[]) {
                 }
         }
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    spdlog::info("Sweeps took {:.3} seconds", elapsed_seconds.count());
-    if (options.exchange_freq > 0)
+    auto end_main_all = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end_main_all - start_main_all;
+    spdlog::info("Main loop  took {:.3} seconds", elapsed_seconds.count());
+    spdlog::info("Sweeps loop  took {:.3} seconds", sweep_time.count());
+    spdlog::info("Exchange took {:.3} seconds", exchange_time.count());
+
+    if (options.exchange_freq > 0 && options.n_sweeps > 0)
         temperer.print_stats(std::cout);
     temperer.reset_stats();
 

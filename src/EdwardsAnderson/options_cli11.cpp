@@ -2,17 +2,17 @@
 // Created by Piotr Bialas on 21.03.2026.
 //
 
-#include "options.h"
+#include "options_cli11.h"
 
 #define pair(name) YAML::Key<<#name<<YAML::Value<<name
 
-YAML::Emitter& lft::ea::Options::emit() {
+YAML::Emitter &lft::ea::Options::emit() {
     yaml << YAML::BeginMap;
     yaml << YAML::Key << "beta" << YAML::Value << YAML::Flow << beta;
     yaml << pair(Lx);
     yaml << pair(Ly);
     yaml << pair(save_freq);
-    yaml << pair(measure_freq);
+    yaml << pair(meas_freq);
     yaml << pair(n_term);
     yaml << pair(n_sweeps);
     yaml << pair(cold_start);
