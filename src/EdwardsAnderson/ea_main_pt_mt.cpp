@@ -43,6 +43,7 @@ void init_field(Field &field, const std::string &file_path, bool binary, bool is
             spdlog::error("Error opening file : {}", file_path);
             exit(1);
         }
+        spdlog::info("Reading link variables from {}", file_path);
         for (std::size_t i = 0; i < field.lat.n_elements; ++i) {
             float val = 7.0;
             if (!(ifs >> val)) {
@@ -90,7 +91,7 @@ int main(int argc, char *argv[]) {
 
     spdlog::info("Writing to data dir = {}", options.data_dir);
     auto options_stream = std::fstream(
-        make_file_path(options.data_dir, "opt", options.name, "yaml"),
+        make_file_path(options.data_dir, "opt", options.Lx, options.Ly, options.name, "yaml"),
         std::ios::out
     );
     options_stream << options.emit().c_str() << std::endl;
@@ -117,7 +118,7 @@ int main(int argc, char *argv[]) {
     init_field(j_field, options.j_file_path, options.binary, options.ising, rng);
 
     // Writing out the J link variables
-    auto j_path = make_file_path(options.data_dir, "j", options.name, "txt");
+    auto j_path = make_file_path(options.data_dir, "j", options.Lx, options.Ly, options.name, "txt");
     std::fstream j_file(j_path, std::fstream::out);
     j_file << j_field << "\n";
     j_file.close();
@@ -171,7 +172,7 @@ int main(int argc, char *argv[]) {
     std::vector<std::fstream *> em_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         em_stream_ptrs[i] = optional_fstream_ptr(
-            make_file_path(options.data_dir, "em",
+            make_file_path(options.data_dir, "em", options.Lx, options.Ly,
                            options.name + std::format("_b{:02d}", i), "txt"),
             options.meas_freq > 0, std::fstream::out);
     }
@@ -180,7 +181,8 @@ int main(int argc, char *argv[]) {
     std::vector<std::fstream *> cfg_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         cfg_stream_ptrs[i] = optional_fstream_ptr(
-            make_file_path(options.data_dir, "cfg", options.name + std::format("_b{:02d}", i), "bin"),
+            make_file_path(options.data_dir, "cfg", options.Lx, options.Ly, options.name + std::format("_b{:02d}", i),
+                           "bin"),
             options.save_freq > 0, std::ios::out | std::ios::binary);
     }
 
@@ -236,8 +238,14 @@ int main(int argc, char *argv[]) {
     spdlog::info("Sweeps loop  took {:.3} seconds", sweep_time.count());
     spdlog::info("Exchange took {:.3} seconds", exchange_time.count());
 
-    if (options.exchange_freq > 0 && options.n_sweeps > 0)
+    if (options.exchange_freq > 0 && options.n_sweeps > 0) {
         temperer.print_stats(std::cout);
+        auto exch_file = make_file_path(options.data_dir, "exch", options.Lx, options.Ly, options.name, "txt");
+        spdlog::info("Exchange file {}", exch_file.string());
+        std::fstream exch_stream(exch_file, std::fstream::out);
+        temperer.print_stats(exch_stream);
+        exch_stream.close();
+    }
     temperer.reset_stats();
 
     // Close files (delete the pointers)
