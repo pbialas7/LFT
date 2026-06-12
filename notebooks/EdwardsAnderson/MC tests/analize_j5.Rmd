@@ -116,7 +116,7 @@ J_t = np.loadtxt(run_path/"J_64x64_new_05.txt")
 ```
 
 ```{python}
-tag = "run_01_J5"
+tag = "run_02_J5"
 ```
 
 ```{python}
@@ -126,6 +126,7 @@ name = f"{Lx:03d}x{Ly:03d}_{tag}"
 ```{python}
 options = tu.read_options(data_path, name)    
 n_betas=len(options['beta'])
+betas=options['beta']
 print(options['beta'])
 ```
 
@@ -167,6 +168,14 @@ for i in range(n_betas):
 ```
 
 ```{python}
+for i in range(3):
+  hist_int(em[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}")
+plt.legend();  
+```
+
+## Parallel tempering overlaps
+
+```{python}
 engs = em[:,:,0].mean(1).numpy()
 stds = em[:,:,0].std(1).numpy()
 ```
@@ -192,18 +201,108 @@ pairs = list(zip(engs,stds))
 ```
 
 ```{python}
-overlap = [overlap(pairs[i], pairs[i+1]).item() for i in range(len(pairs)-1)]
+ovlp = np.array([overlap(pairs[i], pairs[i+1]).item() for i in range(len(pairs)-1)])
 ```
 
 ```{python}
-exch=np.loadtxt(data_path/"exch_064x064_run_01_J5.txt")
+plt.plot(ovlp);
+plt.grid();
 ```
 
 ```{python}
-plt.scatter(overlap, exch[:,2])
+exch=np.loadtxt(data_path/"exch_064x064_run_02_J5.txt")
 ```
 
-## Overlap
+```{python}
+from scipy.optimize import curve_fit
+```
+
+```{python}
+def f(x):
+  return x 
+```
+
+```{python}
+plt.scatter(ovlp, exch[:,2]);
+plt.plot(ovlp, ovlp**4);
+plt.grid();
+```
+
+```{python}
+from scipy.stats import norm
+```
+
+```{python}
+i  = 63
+```
+
+```{python}
+p1 = norm(engs[i],stds[i])
+p2 = norm(engs[i+1],stds[i+1])
+```
+
+```{python}
+n_samples=400000
+E1 = p1.rvs(size=n_samples);
+E2 = p2.rvs(size=n_samples);
+```
+
+```{python}
+delta = (E1-E2)*(options['beta'][i]-options['beta'][i+1])
+```
+
+```{python}
+np.sum(np.random.uniform(size=n_samples)<np.exp(delta))/n_samples
+```
+
+```{python}
+exch[i]
+```
+
+```{python}
+def overlap_th(d1,d2,b1,b2):
+  (m1,s1)=d1
+  (m2,s2)=d2
+  mu = m2 - m1
+  s = np.sqrt(s1*s1+s2*s2)
+  print(mu, s)
+  db = b2-b1
+  dist = norm(0,s)
+  a = 1-dist.cdf(-mu)
+  print(a)
+  b = np.exp(0.5*db*(2*mu+db*s*s) )
+  c = dist.cdf(-db*s*s-mu)
+  print(b*c)
+  a+= b*c
+  return a  
+  
+```
+
+```{python}
+i=10
+```
+
+```{python}
+overlap_th(pairs[i], pairs[i+1], betas[i], betas[i+1])
+```
+
+```{python}
+exch[i]
+```
+
+```{python}
+np.mean(norm(-184.15,121.7).rvs(size=10000)>0)
+```
+
+```{python}
+pairs[0]
+```
+
+```{python}
+pairs[1]
+```
+
+## Replicas overlap
 
 ```{python}
 qs = [em[i ][:,4].mean() for i in range(n_betas)]
@@ -211,6 +310,7 @@ qs = [em[i ][:,4].mean() for i in range(n_betas)]
 
 ```{python}
 plt.scatter(options['beta'], qs);
+plt.grid();
 ```
 
 ```{python}
@@ -258,11 +358,6 @@ em.shape
 ```{python}
 tau, _, = ac_and_tau_int(em[0,:,1].numpy()); 
 tau
-```
-
-```{python}
-for b in np.arange(0.3,1.91, 0.025):
-  print(f"{b:5.3f},")
 ```
 
 ```{python}

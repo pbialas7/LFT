@@ -1,0 +1,70 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.19.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+import torch
+```
+
+```{python}
+from dneumc.ising.ea import Energy
+```
+
+```{python}
+data = torch.load('data/convention_test.pt')
+```
+
+```{python}
+data.keys()
+```
+
+```{python}
+data['samples'].shape 
+```
+
+```{python}
+data['J'].shape
+```
+
+```{python}
+energy = torch.FloatTensor(
+  [Energy(data['samples'].squeeze()[i], data['J'][i]) 
+   for i in range(len(data['energy']))
+                  ]
+)
+```
+
+```{python}
+data['energy']-energy
+```
+
+```{python}
+
+```
+
+```{python}
+betas=torch.arange(0.3,1.91,0.025)
+```
+
+```{python}
+for b in betas:
+  print(f"{b.item():.3f},")
+```
+
+```{python}
+113/18
+```
+
+```{python}
+
+```

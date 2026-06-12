@@ -52,7 +52,7 @@ J_t = torch.load('J_64x64_new.pt')
 ```
 
 ```{python}
-J_t.
+J_t[5].shape
 ```
 
 ```{python}
@@ -61,6 +61,18 @@ J = convert_J(J_t[5].numpy())
 
 ```{python}
 np.savetxt('J_64x64_new_05.txt',J.ravel(),'%d')
+```
+
+```{python}
+J_t = torch.load('J_72x72_new.pt')
+```
+
+```{python}
+J = convert_J(J_t[1].numpy())
+```
+
+```{python}
+np.savetxt('J_72x72_new_01.txt',J.ravel(),'%d')
 ```
 
 ```{python}
