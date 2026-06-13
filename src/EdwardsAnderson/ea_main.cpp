@@ -61,11 +61,11 @@ void measure_em(std::fstream* em_stream_ptr,
                 lft::ea::Replicas<lattice_t>& replicas,
                 const lft::ea::JField<float, lattice_t>& j_field) {
     if (em_stream_ptr) {
-        for (int j = 0; j < replicas.q; ++j) {
+        for (int j = 0; j < replicas.n_replicas; ++j) {
             *em_stream_ptr << lft::ea::energy<double>(*replicas[j], j_field) << " ";
             *em_stream_ptr << lft::ea::magnetisation<double>(*replicas[j]) << " ";
         }
-        if (replicas.q > 1) {
+        if (replicas.n_replicas > 1) {
             *em_stream_ptr << lft::ea::overlap<double>(*replicas[0], *replicas[1]) << " ";
             *em_stream_ptr << lft::ea::link_overlap<double>(*replicas[0], *replicas[1]) << "\n";
         }

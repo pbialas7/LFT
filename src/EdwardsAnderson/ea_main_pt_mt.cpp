@@ -61,11 +61,11 @@ void measure_em(std::fstream *em_stream_ptr,
                 lft::ea::Replicas<lattice_t> &replicas,
                 const lft::ea::JField<float, lattice_t> &j_field) {
     if (em_stream_ptr) {
-        for (int j = 0; j < replicas.q; ++j) {
+        for (int j = 0; j < replicas.n_replicas; ++j) {
             *em_stream_ptr << lft::ea::energy<double>(*replicas[j], j_field) << " ";
             *em_stream_ptr << lft::ea::magnetisation<double>(*replicas[j]) << " ";
         }
-        if (replicas.q > 1) {
+        if (replicas.n_replicas > 1) {
             *em_stream_ptr << lft::ea::overlap<double>(*replicas[0], *replicas[1]) << " ";
             *em_stream_ptr << lft::ea::link_overlap<double>(*replicas[0], *replicas[1]) << "\n";
         } else
@@ -104,7 +104,8 @@ int main(int argc, char *argv[]) {
     spdlog::info("Simulating a {}x{} lattice", options.Lx, options.Ly);
 
     // Random number generator for initializing fields.
-    auto rng = std::mt19937(options.seed);
+    auto rng = std::mt19937_64(options.seed);
+    auto j_rng = std::mt19937_64(options.j_seed);
 
     // Random number generator for simulations
     lft::rand::taus_array taus_rng(max_threads);
@@ -115,7 +116,7 @@ int main(int argc, char *argv[]) {
     lattice_t lat({options.Lx, options.Ly}, 'C');
     lft::ea::JLattice<lattice_t> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
     auto j_field = lft::make_field(j_lat, 1.0f);
-    init_field(j_field, options.j_file_path, options.binary, options.ising, rng);
+    init_field(j_field, options.j_file_path, options.binary, options.ising, j_rng);
 
     // Writing out the J link variables
     auto j_path = make_file_path(options.data_dir, "j", options.Lx, options.Ly, options.name, "txt");
@@ -124,7 +125,6 @@ int main(int argc, char *argv[]) {
     j_file.close();
 
     //Creating chains and replicas
-
 
     spdlog::info("Using {} betas {} with replicas", options.n_betas(), n_replicas);
 
@@ -162,8 +162,9 @@ int main(int argc, char *argv[]) {
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
     spdlog::info("Thermalization took {:.3} seconds", elapsed_term_seconds.count());
-    if (options.exchange_freq > 0)
+    if (options.exchange_freq > 0 && options.n_term > 1) {
         temperer.print_stats(std::cout);
+    }
     temperer.reset_stats();
 
     // Creating output files

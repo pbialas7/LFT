@@ -16,16 +16,6 @@
 
 namespace lft::ea {
     class Options {
-        // std::vector<float> split_floats(const std::string &s, char delim = ',') {
-        //     std::vector<float> result;
-        //     std::stringstream ss(s);
-        //     std::string token;
-        //     while (std::getline(ss, token, delim))
-        //         result.push_back(std::stof(token));
-        //     return result;
-        // }
-
-
         std::vector<float> split_floats(const std::string &s, char delim = ',') {
             auto trim = [](std::string &x) {
                 while (!x.empty() && std::isspace(static_cast<unsigned char>(x.front()))) x.erase(x.begin());
@@ -57,6 +47,7 @@ namespace lft::ea {
             app.add_option("-t,--n-term", n_term, "number of thermalization sweeps");
             app.add_option("-c,--cold-start", cold_start, "cold start");
             app.add_option("--seed", seed, "seed");
+            app.add_option("--j-seed", j_seed, "j seed");
             app.add_option("--name", name, "name");
             app.add_option("--data-dir", data_dir, "data directory");
             app.add_option("--save-freq", save_freq, "configuration save frequency");
@@ -103,6 +94,7 @@ namespace lft::ea {
         std::string name{"name"};
         std::string data_dir{"."};
         size_t seed = std::mt19937_64::default_seed;
+        size_t j_seed = std::mt19937_64::default_seed;
         int meas_freq = 0;
         bool ising = false;
         bool binary = false;
