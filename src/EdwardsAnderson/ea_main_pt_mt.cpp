@@ -22,14 +22,70 @@ namespace fs = std::filesystem;
 #include "parallel_tempering_mt.h"
 #include "options_cli11.h"
 
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <algorithm>
+
+inline std::string format_hms(double total_seconds) {
+    if (total_seconds < 0) total_seconds = 0;
+    long long s = static_cast<long long>(total_seconds + 0.5); // round
+    long long h = s / 3600;
+    s %= 3600;
+    long long m = s / 60;
+    s %= 60;
+
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << h << ":"
+        << std::setw(2) << m << ":" << std::setw(2) << s;
+    return oss.str();
+}
+
+inline void print_progress_bar(
+    std::int64_t current_iteration, // 1-based preferred
+    std::int64_t final_iterations,
+    const std::chrono::high_resolution_clock::time_point& start_time,
+    int bar_width = 40) {
+    if (final_iterations <= 0) return;
+
+    current_iteration = std::clamp<std::int64_t>(current_iteration, 0, final_iterations);
+    const double progress = static_cast<double>(current_iteration) /
+        static_cast<double>(final_iterations);
+
+    const int filled = static_cast<int>(progress * bar_width);
+
+    const auto now = std::chrono::high_resolution_clock::now();
+    const double elapsed = std::chrono::duration<double>(now - start_time).count();
+
+    double eta = 0.0;
+    if (current_iteration > 0 && current_iteration < final_iterations) {
+        const double sec_per_iter = elapsed / static_cast<double>(current_iteration);
+        eta = sec_per_iter * static_cast<double>(final_iterations - current_iteration);
+    }
+
+    std::cout << "\r[";
+    for (int i = 0; i < bar_width; ++i) {
+        std::cout << (i < filled ? '#' : '-');
+    }
+    std::cout << "] "
+        << std::setw(3) << static_cast<int>(progress * 100.0) << "% "
+        << "elapsed " << format_hms(elapsed) << " "
+        << "eta " << format_hms(eta)
+        << std::flush;
+
+    if (current_iteration == final_iterations) {
+        std::cout << "\n";
+    }
+}
 
 /**
  * Initializes the field with either random values or from a file. If file_path is empty, it initializes randomly.
  * If ising is true, it initializes with 1. If binary is true, it initializes with +/-1.
  * Otherwise, it initializes with Gaussian random numbers.
  */
-template<typename Field, typename RNG>
-void init_field(Field &field, const std::string &file_path, bool binary, bool ising, RNG &rng) {
+template <typename Field, typename RNG>
+void init_field(Field& field, const std::string& file_path, bool binary, bool ising, RNG& rng) {
     if (file_path.empty()) {
         if (!ising) {
             if (binary)
@@ -37,7 +93,8 @@ void init_field(Field &field, const std::string &file_path, bool binary, bool is
             else
                 lft::ea::init_gaussian(field, rng);
         }
-    } else {
+    }
+    else {
         std::ifstream ifs(file_path, std::ios::in);
         if (!ifs) {
             spdlog::error("Error opening file : {}", file_path);
@@ -57,9 +114,9 @@ void init_field(Field &field, const std::string &file_path, bool binary, bool is
 
 using lattice_t = lft::Lattice<uint32_t>;
 
-void measure_em(std::fstream *em_stream_ptr,
-                lft::ea::Replicas<lattice_t> &replicas,
-                const lft::ea::JField<float, lattice_t> &j_field) {
+void measure_em(std::fstream* em_stream_ptr,
+                lft::ea::Replicas<lattice_t>& replicas,
+                const lft::ea::JField<float, lattice_t>& j_field) {
     if (em_stream_ptr) {
         for (int j = 0; j < replicas.n_replicas; ++j) {
             *em_stream_ptr << lft::ea::energy<double>(*replicas[j], j_field) << " ";
@@ -68,14 +125,15 @@ void measure_em(std::fstream *em_stream_ptr,
         if (replicas.n_replicas > 1) {
             *em_stream_ptr << lft::ea::overlap<double>(*replicas[0], *replicas[1]) << " ";
             *em_stream_ptr << lft::ea::link_overlap<double>(*replicas[0], *replicas[1]) << "\n";
-        } else
+        }
+        else
             *em_stream_ptr << "\n";
         em_stream_ptr->flush();
     }
 }
 
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     auto max_threads = std::thread::hardware_concurrency();
 
     lft::ea::Options options;
@@ -155,8 +213,12 @@ int main(int argc, char *argv[]) {
             temperer.sweep_t1(1, taus_rng[0]);
 
         if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
-            temperer.exchange(rng);
+            if (options.n_threads > 1)
+                temperer.exchange_mt(taus_rng);
+            else
+                temperer.exchange(taus_rng[0]);
         }
+        print_progress_bar(i + 1, options.n_term, start_term, 40);
     }
 
     auto end_term = std::chrono::high_resolution_clock::now();
@@ -170,7 +232,7 @@ int main(int argc, char *argv[]) {
     // Creating output files
 
     // Energy and magnetization
-    std::vector<std::fstream *> em_stream_ptrs(options.n_betas(), nullptr);
+    std::vector<std::fstream*> em_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         em_stream_ptrs[i] = optional_fstream_ptr(
             make_file_path(options.data_dir, "em", options.Lx, options.Ly,
@@ -179,7 +241,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Configuration files
-    std::vector<std::fstream *> cfg_stream_ptrs(options.n_betas(), nullptr);
+    std::vector<std::fstream*> cfg_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         cfg_stream_ptrs[i] = optional_fstream_ptr(
             make_file_path(options.data_dir, "cfg", options.Lx, options.Ly, options.name + std::format("_b{:02d}", i),
@@ -230,8 +292,10 @@ int main(int argc, char *argv[]) {
                     for (int j = 0; j < n_replicas; ++j) {
                         temperer.chains[i][j]->write(*cfg_stream_ptrs[i]);
                     }
+                    cfg_stream_ptrs[i]->flush();
                 }
         }
+        print_progress_bar(i + 1, options.n_sweeps, start_main_all, 40);
     }
     auto end_main_all = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end_main_all - start_main_all;
