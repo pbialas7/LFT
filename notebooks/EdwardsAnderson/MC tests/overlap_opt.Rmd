@@ -1,0 +1,318 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.19.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+
+```
+
+```{python}
+# %load_ext autoreload
+# %autoreload 2
+```
+
+```{python}
+from pathlib import Path
+```
+
+```{python}
+project_path = Path.home()/"Projects/LFT"
+```
+
+```{python}
+run_path = project_path/"EA_runs"
+```
+
+```{python}
+data_path = run_path/"data"
+```
+
+```{python}
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+import yaml
+import scipy
+from scipy.stats import norm
+```
+
+```{python}
+import dneumc
+```
+
+```{python}
+import test_utils as tu
+```
+
+```{python}
+from dneumc.ising.ea import Energy
+```
+
+```{python}
+from neumc.utils.stats_utils import bootstrap, ac_and_tau_int, torch_bootstrap
+```
+
+```{python}
+from rich.table import Table
+```
+
+```{python}
+def hist_int(a,*,bin_width,**kwargs):
+    a_min = a.min()
+    a_max = a.max()
+    bins = int(round(a_max-a_min)/bin_width)+1
+    return plt.hist(a,bins=bins, range=(a_min-bin_width/2, a_max+bin_width/2), **kwargs )
+```
+
+```{python}
+Lx = 72
+Ly = 72
+```
+
+```{python}
+J_t = np.loadtxt(run_path/"J_72x72_new_01.txt").reshape(2,Lx,Ly)
+```
+
+## Long runs
+
+```{python}
+tag = "run03_J01"
+```
+
+```{python}
+name = f"{Lx:03d}x{Ly:03d}_{tag}"
+```
+
+```{python}
+options = tu.read_options(data_path, name)    
+betas = options['beta']
+n_betas=len(betas)
+print(betas)
+```
+
+```{python}
+J = np.loadtxt(data_path/f"j_{name}.txt").reshape(2,Lx,Ly)
+```
+
+```{python}
+np.allclose(J_t,J) 
+```
+
+```{python}
+em = tu.read_em_files(data_path, name, options['beta'])
+em.shape
+```
+
+```{python}
+d=1
+taus1=[]
+taus2=[]
+for i in range(n_betas):
+  tau, ac = ac_and_tau_int(em[i][::d,1].numpy());
+  taus1.append(tau)
+  tau, ac = ac_and_tau_int(em[i][::d,3].numpy());
+  taus2.append(tau)
+  
+```
+
+```{python}
+plt.scatter(options['beta'], taus1); 
+plt.scatter(options['beta'], taus2); 
+plt.grid();
+```
+
+```{python}
+for i in range(n_betas):
+  hist_int(em[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}")
+#plt.legend();  
+```
+
+```{python}
+for i in range(3):
+  hist_int(em[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}")
+plt.legend();  
+```
+
+```{python}
+exch=None
+if options['exchange_freq']>0:
+  exch=np.loadtxt(data_path/f"exch_{name}.txt")
+```
+
+```{python}
+if exch is not None :
+  plt.plot(betas[:-1], exch[:,2])
+plt.grid();  
+```
+
+```{python}
+engs = em[:,:,0].mean(1).numpy()
+stds = em[:,:,0].std(1).numpy()
+```
+
+```{python}
+bs = np.linspace(0.3,1.9,200)
+```
+
+```{python}
+p_engs = np.polyfit(betas, engs,4)
+```
+
+```{python}
+plt.scatter(betas, engs);
+plt.plot(bs, np.polyval(p_engs,bs),c='red');
+```
+
+```{python}
+p_stds = np.polyfit(betas, stds,4)
+```
+
+```{python}
+plt.scatter(options['beta'], stds);
+plt.plot(bs, np.polyval(p_stds,bs),c='red');
+```
+
+```{python}
+def overlap_th(d1,d2,b1,b2):
+  (m1,s1)=d1
+  (m2,s2)=d2
+  mu = m2 - m1
+  s = np.sqrt(s1*s1+s2*s2)
+  db = b2-b1
+  dist = norm(0,s)
+  a = 1-dist.cdf(-mu)
+  b = np.exp(0.5*db*(2*mu+db*s*s) )
+  c = dist.cdf(-db*s*s-mu)
+  a+= b*c
+  return a  
+  
+```
+
+```{python}
+def overlap(a,b):
+  (m1,s1)=a
+  (m2,s2)=b
+  exp = (m1-m2)**2/(s1**2+s2**2)
+  return np.sqrt(2)*np.exp(-exp/4)*np.sqrt(s1*s2/(s1**2+s2**2))
+```
+
+```{python}
+pairs = list(zip(engs,stds))
+```
+
+```{python}
+i=63
+```
+
+```{python}
+overlap_th(pairs[i], pairs[i+1], betas[i], betas[i+1])
+```
+
+```{python}
+exch[i]
+```
+
+```{python}
+from scipy.stats import norm
+```
+
+```{python}
+i  = 63
+```
+
+```{python}
+p1 = norm(engs[i],stds[i])
+p2 = norm(engs[i+1],stds[i+1])
+```
+
+```{python}
+n_samples=400000
+E1 = p1.rvs(size=n_samples);
+E2 = p2.rvs(size=n_samples);
+```
+
+```{python}
+delta = (E1-E2)*(options['beta'][i]-options['beta'][i+1])
+```
+
+```{python}
+np.sum(np.random.uniform(size=n_samples)<np.exp(delta))/n_samples
+```
+
+```{python}
+exch[i]
+```
+
+```{python}
+def ovp(b_i, b_f):
+  e_i = np.polyval(p_engs,b_i)
+  s_i = np.polyval(p_stds,b_i)
+  e_f = np.polyval(p_engs,b_f)
+  s_f = np.polyval(p_stds,b_f)
+  # print(e_i,s_i)
+  # print(e_f,s_f)
+  return overlap_th((e_i,s_i),(e_f,s_f),b_i,b_f)
+```
+
+```{python}
+ovp(01.875,1.9)
+```
+
+```{python}
+exch[i]
+```
+
+```{python}
+ovps = np.array([(betas[i], betas[i+1], exch[i][2],ovp(betas[i], betas[i+1])) for i in range(len(betas)-1)])
+```
+
+```{python}
+plt.scatter(ovps[:,0], ovps[:,2]);
+plt.scatter(ovps[:,0], ovps[:,3]);
+plt.grid();
+```
+
+```{python}
+from scipy.optimize import minimize_scalar
+```
+
+```{python}
+def next_b(b_s):
+  return minimize_scalar(lambda b: (ovp(b_s,b)-0.5)**2, bracket=[b_s,b_s+0.1])
+```
+
+```{python}
+next_b(0.4059900688104421)['x']
+```
+
+```{python}
+res=minimize_scalar(lambda 0.309: (ovp(0.309,b)-0.5)**2, bracket=[0.3,])
+```
+
+```{python}
+res['x']
+```
+
+```{python}
+b = 0.3
+i = 0
+while b<1.9:
+  print(f"{b:.4f},")
+  res = next_b(b)
+  b = res['x']
+  i+=1
+```
+
+```{python}
+
+```
