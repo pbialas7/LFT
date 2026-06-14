@@ -1,0 +1,11 @@
+Lx = 16
+Ly = 16
+data-dir = "data"
+binary = true
+j-seed = 123
+n-replicas = 2
+meas-freq = 2
+save-freq = 100
+exchange-freq = 1
+beta = [0.300, 0.35, 0.4, 0.45, 0.50, 0.55, 0.60]
+
