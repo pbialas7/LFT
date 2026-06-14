@@ -26,6 +26,13 @@ namespace lft::ea {
             return replica[i];
         }
 
+        SpinField<L> *operator[](int i) const {
+            return replica[i];
+        }
+
+        auto get_lattice()const  {
+            return replica[0]->lat;
+        }
 
         template<typename RNG>
         size_t sweep_t1(int n_sweeps, HeathBath<float, L> &heath_bath, RNG &rng) {

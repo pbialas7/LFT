@@ -27,6 +27,7 @@ add_executable(ea_pt_mt ea_main_pt_mt.cpp
         parallel_tempering_mt.cpp
         options_cli11.cpp
         ${SRC_COMMON}
+        houdayer.h
 )
 target_link_libraries(ea_pt_mt PRIVATE yaml-cpp::yaml-cpp lft spdlog::spdlog OpenMP::OpenMP_CXX CLI11::CLI11)
 target_include_directories(ea_pt_mt PRIVATE ${CMAKE_SOURCE_DIR}/src)

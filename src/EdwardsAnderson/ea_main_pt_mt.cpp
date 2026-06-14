@@ -275,6 +275,11 @@ int main(int argc, char* argv[]) {
             else
                 temperer.exchange(taus_rng[0]);
         }
+
+        if (options.cluster_freq > 0 && (i > 0) && (i % options.cluster_freq) == 0) {
+            temperer.houdayer(taus_rng[0]);
+        }
+
         auto end_main_exchange = std::chrono::high_resolution_clock::now();
         exchange_time += std::chrono::duration<double>(end_main_exchange - start_main_exchange);
 

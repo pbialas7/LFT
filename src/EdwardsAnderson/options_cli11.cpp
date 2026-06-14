@@ -26,6 +26,7 @@ YAML::Emitter &lft::ea::Options::emit() {
     yaml << pair(binary);
     yaml << pair(n_replicas);
     yaml << pair(j_file_path);
+    yaml << pair(cluster_freq);
     yaml << YAML::EndMap;
     return yaml;
 }

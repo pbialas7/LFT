@@ -16,8 +16,9 @@
 
 namespace lft::ea {
     class Options {
-        std::vector<float> split_floats(const std::string &s, char delim = ',') {
-            auto trim = [](std::string &x) {
+        std::vector<float> split_floats(const std::string& s, char delim = ',') {
+            auto trim = [](std::string& x)
+            {
                 while (!x.empty() && std::isspace(static_cast<unsigned char>(x.front()))) x.erase(x.begin());
                 while (!x.empty() && std::isspace(static_cast<unsigned char>(x.back()))) x.pop_back();
             };
@@ -59,6 +60,7 @@ namespace lft::ea {
             app.add_option("--level", spdlog_level, "Sets the spdlog level");
             app.add_option("--n-threads", n_threads, "Set number of threads to use");
             app.add_option("--exchange-freq", exchange_freq, "Replicas exchange frequency");
+            app.add_option("--cluster-freq",cluster_freq, "Replicas cluster frequency");
             app.add_option("--beta", beta, "ist of betas for parallel tempering");
 
 
@@ -68,10 +70,11 @@ namespace lft::ea {
             app.set_config("--config", "", "Path to optional config file");
         }
 
-        int parse(int argc, char *argv[]) {
+        int parse(int argc, char* argv[]) {
             try {
                 app.parse(argc, argv); // instead of CLI11_PARSE macro inside a non-main function
-            } catch (const CLI::ParseError &e) {
+            }
+            catch (const CLI::ParseError& e) {
                 return app.exit(e);
             }
 
@@ -103,8 +106,9 @@ namespace lft::ea {
         std::string spdlog_level{"info"};
         int n_threads = 1;
         int exchange_freq = 0;
+        int cluster_freq = 0;
 
-        YAML::Emitter &emit();
+        YAML::Emitter& emit();
 
     private:
         YAML::Emitter yaml;
