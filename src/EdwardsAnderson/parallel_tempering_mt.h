@@ -15,9 +15,10 @@
 namespace lft::ea {
     template <typename L>
     struct ParallelTemperingMT {
-        ParallelTemperingMT(int q, int n, const std::vector<float>& betas,
-                            const JField<float, L>& J_a) : q(q), chains(n, Replicas<L>(q)), betas(betas), J(J_a),
-                                                           heath_bath(n, J_a), accepted_v(n, 0), exchange_v(n, 0),
+        ParallelTemperingMT(int n_replicas, int n, const std::vector<float>& betas,
+                            const JField<float, L>& J_a) : n_replicas(n_replicas), chains(n, Replicas<L>(n_replicas)), betas(betas), J(J_a),
+                                                           heath_bath(n, J_a),
+                                                           accepted_v(n, 0), exchange_v(n, 0), cluster_size_v(n, 0),
                                                            u(0.0, 1.0) {
             assert(betas.size() == n);
             for (int i = 0; i < n; ++i) {
@@ -88,7 +89,7 @@ namespace lft::ea {
         template <typename RNG>
         size_t exchange(RNG& rng) {
             size_t accepted = 0;
-            for (int j = 0; j < q; j++)
+            for (int j = 0; j < n_replicas; j++)
                 accepted += exchange(j, rng);
             return accepted;
         }
@@ -99,7 +100,7 @@ namespace lft::ea {
 #pragma omp parallel for shared(rng,accepted_v, exchange_v)  schedule(static)
             for (int j = 0; j < betas.size() - 1; j += 2) {
                 auto t = omp_get_thread_num();
-                for (int i_r = 0; i_r < q; i_r++) {
+                for (int i_r = 0; i_r < n_replicas; i_r++) {
                     auto a = exchange(j, j + 1, i_r, rng[t]);
                     accepted += a;
                     accepted_v[j] += a;
@@ -109,7 +110,7 @@ namespace lft::ea {
 #pragma omp parallel for shared(rng,accepted_v, exchange_v)  schedule(static)
             for (int j = 1; j < betas.size() - 1; j += 2) {
                 auto t = omp_get_thread_num();
-                for (int i_r = 0; i_r < q; i_r++) {
+                for (int i_r = 0; i_r < n_replicas; i_r++) {
                     auto a = exchange(j, j + 1, i_r, rng[t]);
                     accepted += a;
                     accepted_v[j] += a;
@@ -130,7 +131,7 @@ namespace lft::ea {
             if (i_start >= 0) {
                 cluster_size = flip_cluster(chain, r1, r2, i_start);
             }
-            assert(cluster_size > 0);
+
             auto E1_after = energy<float>(*chain[r1], J);
             auto E2_after = energy<float>(*chain[r2], J);
 
@@ -144,10 +145,28 @@ namespace lft::ea {
         template <typename RNG>
         size_t houdayer(RNG& rng) {
             size_t cluster_size = 0;
+            std::vector<int> replica_indices(n_replicas);
+            std::iota(replica_indices.begin(), replica_indices.end(), 0);
+            std::shuffle(replica_indices.begin(), replica_indices.end(), rng);
             for (int j = 0; j < betas.size(); j++) {
-                cluster_size += houdayer(chains[j], 0, 1, rng);
+                for (int i_r = 0; i_r < n_replicas / 2; i_r++)
+                    cluster_size += houdayer(chains[j], i_r, i_r + n_replicas / 2, rng);
             }
             return cluster_size;
+        }
+
+        template <typename RNG>
+        size_t houdayer_mt(RNG& rng) {
+            std::vector<int> replica_indices(n_replicas);
+            std::iota(replica_indices.begin(), replica_indices.end(), 0);
+            std::shuffle(replica_indices.begin(), replica_indices.end(), rng[0]);
+#pragma omp parallel for shared(rng,cluster_size_v) schedule(static)
+            for (int j = 0; j < betas.size(); j++) {
+                auto t = omp_get_thread_num();
+                for (int i_r = 0; i_r < n_replicas / 2; i_r++)
+                    cluster_size_v[j] += houdayer(chains[j], i_r, i_r + n_replicas / 2, rng[t]);
+            }
+            return 1;
         }
 
         void print_stats(std::ostream& os) {
@@ -162,7 +181,7 @@ namespace lft::ea {
             std::fill(exchange_v.begin(), exchange_v.end(), 0);
         }
 
-        int q;
+        int n_replicas;
         std::uniform_real_distribution<float> u;
         std::vector<Replicas<L>> chains;
         std::vector<float> betas;
@@ -170,5 +189,6 @@ namespace lft::ea {
         std::vector<HeathBath<float, L>> heath_bath;
         std::vector<size_t> accepted_v;
         std::vector<size_t> exchange_v;
+        std::vector<size_t> cluster_size_v;
     };
 }

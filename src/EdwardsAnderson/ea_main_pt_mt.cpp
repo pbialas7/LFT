@@ -218,8 +218,15 @@ int main(int argc, char* argv[]) {
             else
                 temperer.exchange(taus_rng[0]);
         }
+
+        if (options.cluster_freq > 0 && (i > 0) && (i % options.cluster_freq) == 0) {
+            if (options.n_threads > 1)
+                temperer.houdayer_mt(taus_rng);
+            else
+                temperer.houdayer(taus_rng[0]);
+        }
         print_progress_bar(i + 1, options.n_term, start_term, 40);
-    }
+    } // End thermalization loop
 
     auto end_term = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_term_seconds = end_term - start_term;
@@ -259,6 +266,8 @@ int main(int argc, char* argv[]) {
     auto start_main_all = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> sweep_time(0.0);
     std::chrono::duration<double> exchange_time(0.0);
+    std::chrono::duration<double> cluster_time(0.0);
+
     for (int i = 0; i < options.n_sweeps; ++i) {
         auto start_main_sweep = std::chrono::high_resolution_clock::now();
         if (options.n_threads > 1)
@@ -275,13 +284,20 @@ int main(int argc, char* argv[]) {
             else
                 temperer.exchange(taus_rng[0]);
         }
-
-        if (options.cluster_freq > 0 && (i > 0) && (i % options.cluster_freq) == 0) {
-            temperer.houdayer(taus_rng[0]);
-        }
-
         auto end_main_exchange = std::chrono::high_resolution_clock::now();
         exchange_time += std::chrono::duration<double>(end_main_exchange - start_main_exchange);
+
+
+        auto start_main_cluster = std::chrono::high_resolution_clock::now();
+        if (options.cluster_freq > 0 && (i > 0) && (i % options.cluster_freq) == 0) {
+            if (options.n_threads > 1)
+                temperer.houdayer_mt(taus_rng);
+            else
+                temperer.houdayer(taus_rng[0]);
+        }
+        auto end_main_cluster = std::chrono::high_resolution_clock::now();
+        cluster_time += std::chrono::duration<double>(end_main_cluster - start_main_cluster);
+
 
         //Measurements
         if (options.meas_freq > 0 && (i % options.meas_freq) == 0) {
@@ -301,12 +317,14 @@ int main(int argc, char* argv[]) {
                 }
         }
         print_progress_bar(i + 1, options.n_sweeps, start_main_all, 40);
-    }
+    } // End main loop
+
     auto end_main_all = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end_main_all - start_main_all;
     spdlog::info("Main loop  took {:.3} seconds", elapsed_seconds.count());
     spdlog::info("Sweeps loop  took {:.3} seconds", sweep_time.count());
     spdlog::info("Exchange took {:.3} seconds", exchange_time.count());
+    spdlog::info("Clusters took {:.3} seconds", cluster_time.count());
 
     if (options.exchange_freq > 0 && options.n_sweeps > 0) {
         temperer.print_stats(std::cout);
