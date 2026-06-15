@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
 
     lft::ea::Options options;
     options.parse(argc, argv);
-    spdlog::info("data_dir after parse: '{}'", options.data_dir);
+    spdlog::debug("data_dir after parse: '{}'", options.data_dir);
 
     if (options.beta.empty()) {
         spdlog::error("No betas specified");
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < options.n_betas(); ++i) {
         em_stream_ptrs[i] = optional_fstream_ptr(
             make_file_path(options.data_dir, "em", options.Lx, options.Ly,
-                           options.name + std::format("_b{:02d}", i), "txt"),
+                           options.name + std::format("_b{:03d}", i), "txt"),
             options.meas_freq > 0, std::fstream::out);
     }
 
@@ -256,7 +256,7 @@ int main(int argc, char *argv[]) {
     std::vector<std::fstream *> cfg_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         cfg_stream_ptrs[i] = optional_fstream_ptr(
-            make_file_path(options.data_dir, "cfg", options.Lx, options.Ly, options.name + std::format("_b{:02d}", i),
+            make_file_path(options.data_dir, "cfg", options.Lx, options.Ly, options.name + std::format("_b{:03d}", i),
                            "bin"),
             options.save_freq > 0, std::ios::out | std::ios::binary);
     }
