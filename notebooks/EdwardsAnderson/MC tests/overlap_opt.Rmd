@@ -75,18 +75,18 @@ def hist_int(a,*,bin_width,**kwargs):
 ```
 
 ```{python}
-Lx = 72
-Ly = 72
+Lx = 24
+Ly = 24
 ```
 
 ```{python}
-J_t = np.loadtxt(run_path/"J_72x72_new_01.txt").reshape(2,Lx,Ly)
+J_t = np.loadtxt(run_path/"J_24x24_new_01.txt").reshape(2,Lx,Ly)
 ```
 
 ## Long runs
 
 ```{python}
-tag = "run03_J01"
+tag = "tsrun01"
 ```
 
 ```{python}
@@ -97,6 +97,7 @@ name = f"{Lx:03d}x{Ly:03d}_{tag}"
 options = tu.read_options(data_path, name)    
 betas = options['beta']
 n_betas=len(betas)
+print(n_betas)
 print(betas)
 ```
 
@@ -190,11 +191,10 @@ def overlap_th(d1,d2,b1,b2):
   s = np.sqrt(s1*s1+s2*s2)
   db = b2-b1
   dist = norm(0,s)
-  a = 1-dist.cdf(-mu)
-  b = np.exp(0.5*db*(2*mu+db*s*s) )
-  c = dist.cdf(-db*s*s-mu)
-  a+= b*c
-  return a  
+  a = dist.logsf(-mu)
+  b = 0.5*db*(2*mu+db*s*s) 
+  c = dist.logcdf(-db*s*s-mu)
+  return np.exp(a)+np.exp(b+c)  
   
 ```
 
@@ -211,7 +211,7 @@ pairs = list(zip(engs,stds))
 ```
 
 ```{python}
-i=63
+i=15
 ```
 
 ```{python}
@@ -224,10 +224,6 @@ exch[i]
 
 ```{python}
 from scipy.stats import norm
-```
-
-```{python}
-i  = 63
 ```
 
 ```{python}
@@ -288,19 +284,11 @@ from scipy.optimize import minimize_scalar
 
 ```{python}
 def next_b(b_s):
-  return minimize_scalar(lambda b: (ovp(b_s,b)-0.5)**2, bracket=[b_s,b_s+0.1])
+  return minimize_scalar(lambda b: (ovp(b_s,b)-1/3)**2, bracket=[b_s,b_s+0.15])
 ```
 
 ```{python}
 next_b(0.4059900688104421)['x']
-```
-
-```{python}
-res=minimize_scalar(lambda 0.309: (ovp(0.309,b)-0.5)**2, bracket=[0.3,])
-```
-
-```{python}
-res['x']
 ```
 
 ```{python}
@@ -311,6 +299,10 @@ while b<1.9:
   res = next_b(b)
   b = res['x']
   i+=1
+```
+
+```{python}
+i
 ```
 
 ```{python}

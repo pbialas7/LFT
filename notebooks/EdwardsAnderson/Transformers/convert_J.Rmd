@@ -64,7 +64,7 @@ np.savetxt('J_64x64_new_05.txt',J.ravel(),'%d')
 ```
 
 ```{python}
-J_t = torch.load('J_72x72_new.pt')
+J_t = torch.load('J_24x24_new.pt').to('cpu')
 ```
 
 ```{python}
@@ -72,7 +72,7 @@ J = convert_J(J_t[1].numpy())
 ```
 
 ```{python}
-np.savetxt('J_72x72_new_01.txt',J.ravel(),'%d')
+np.savetxt('J_24x24_new_01.txt',J.ravel(),'%d')
 ```
 
 ```{python}

@@ -2,6 +2,8 @@ Lx = 72
 Ly = 72
 data-dir = "data"
 binary = true
+meas-freq = 5
+save-freq = 25
 j-file = "J_72x72_new_01.txt"
 beta = [
     0.3000,

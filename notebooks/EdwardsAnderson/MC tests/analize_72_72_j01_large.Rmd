@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.18.1
+      jupytext_version: 1.19.1
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -82,7 +82,7 @@ J_t = np.loadtxt(run_path/"J_72x72_new_01.txt").reshape(2,Lx,Ly)
 ## Long runs
 
 ```{python}
-tag = "run_mac01_test_J01"
+tag = "tsrun01"
 ```
 
 ```{python}
@@ -132,19 +132,24 @@ plt.grid();
 ## Overlap
 
 ```{python}
-qs = [em[i ][:,4].mean() for i in range(n_betas)]
-qs_err = [em[i ][:,4].std() for i in range(n_betas)]
+qs = [em[i ][:,8].mean() for i in range(n_betas)]
+qs_err = [em[i ][:,8].std()/np.sqrt(em[i ][:,8].shape[0]) for i in range(n_betas)]
 ```
 
 ```{python}
 plt.scatter(options['beta'], qs);
+plt.errorbar(options['beta'], qs,yerr=qs_err)
 plt.grid();
 ```
 
 ```{python}
-for i in range(n_betas):
+for i in range(n_betas-10,n_betas):
   hist_int(em[i][:,0].numpy(),bin_width=4, histtype='step', label=f"{options["beta"][i]:.2f}")
 #plt.legend();  
+```
+
+```{python}
+2*72*72
 ```
 
 ```{python}
@@ -164,13 +169,40 @@ np.searchsorted(betas,1.6)
 ```
 
 ```{python}
-i = 105
+i = 117
 print(betas[i])
 cfgs = torch.from_numpy(
   np.fromfile(f"{data_path}/cfg_{name}_b{i:02d}.bin", dtype="int8"
              ).reshape(-1,n_replicas,Lx,Ly)).to(dtype=torch.float32)
 n_cfgs =len(cfgs)
 n_cfgs
+```
+
+```{python}
+n_replicas
+```
+
+```{python}
+o = np.empty((n_replicas, n_replicas))
+for r1 in range(n_replicas):
+  for r2 in range(n_replicas):
+    m1 = cfgs.mean(0)[r1]
+    m2 = cfgs.mean(0)[r2]
+    o[r1,r2] = torch.mean(m1*m2).item()
+o    
+```
+
+```{python}
+em[-1,:,4].mean()
+```
+
+```{python}
+em[-1,:,2].mean()
+```
+
+```{python}
+plt.imshow(o);
+plt.colorbar();
 ```
 
 ```{python}
@@ -199,12 +231,37 @@ fig.colorbar(im2, cax=cax);
 ```
 
 ```{python}
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+fig.subplots_adjust(wspace=0.0)
+# Your data
+data1 = cfgs.mean(0)[2]
+data2 = cfgs.mean(0)[3]
+
+# Use the same vmin/vmax so the colorbar is meaningful for both
+vmin = min(data1.min(), data2.min())
+vmax = max(data1.max(), data2.max())
+
+im1 = axes[0].imshow(data1, vmin=vmin, vmax=vmax)
+im2 = axes[1].imshow(data2, vmin=vmin, vmax=vmax)
+axes[1].tick_params(labelleft=False)
+
+# Attach colorbar to the last axes, matching its height exactly
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+divider = make_axes_locatable(axes[1])
+cax = divider.append_axes("right", size="5%", pad=0.05)
+fig.colorbar(im2, cax=cax);
+
+#plt.tight_layout()
+```
+
+```{python}
 1/np.sqrt(n_cfgs)
 ```
 
 ```{python}
-plt.hist(cfgs.mean(0)[0].ravel(),bins=50, histtype='step', label='rep 0', density=True); 
-plt.hist(cfgs.mean(0)[1].ravel(),bins=50, histtype='step', label='rep 1', density=True); 
+for r in range(options['n_replicas']):
+  plt.hist(cfgs.mean(0)[r].ravel(),bins=50, histtype='step', label=f'rep {r:d}', density=True); 
 plt.grid();
 plt.legend();
 ```
@@ -331,7 +388,7 @@ exch[i]
 ```
 
 ```{python}
-
+13/86
 ```
 
 ```{python}
