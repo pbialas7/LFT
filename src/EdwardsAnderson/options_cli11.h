@@ -16,9 +16,8 @@
 
 namespace lft::ea {
     class Options {
-        std::vector<float> split_floats(const std::string& s, char delim = ',') {
-            auto trim = [](std::string& x)
-            {
+        std::vector<float> split_floats(const std::string &s, char delim = ',') {
+            auto trim = [](std::string &x) {
                 while (!x.empty() && std::isspace(static_cast<unsigned char>(x.front()))) x.erase(x.begin());
                 while (!x.empty() && std::isspace(static_cast<unsigned char>(x.back()))) x.pop_back();
             };
@@ -40,41 +39,12 @@ namespace lft::ea {
         CLI::App app;
         bool debug = false;
 
-        Options() {
-            //app.add_option("-h,--help", "Print this help documentation");
-            app.add_option("--Lx", Lx, "Lx");
-            app.add_option("--Ly", Ly, "Ly");
-            app.add_option("-n, --n-sweeps", n_sweeps, "number of measurement sweeps");
-            app.add_option("-t,--n-term", n_term, "number of thermalization sweeps");
-            app.add_option("-c,--cold-start", cold_start, "cold start");
-            app.add_option("--seed", seed, "seed");
-            app.add_option("--j-seed", j_seed, "j seed");
-            app.add_option("--name", name, "name");
-            app.add_option("--data-dir", data_dir, "data directory");
-            app.add_option("--save-freq", save_freq, "configuration save frequency");
-            app.add_option("--meas-freq", meas_freq, "measure save frequency");
-            app.add_flag("--ising", ising, "Set J = 1");
-            app.add_flag("--binary", binary, "Sets J = +/-1");
-            app.add_option("-q,--n-replicas", n_replicas, "Simulates n replicas.");
-            app.add_option("-j,--j-file", j_file_path, "File with link variables");
-            app.add_option("--level", spdlog_level, "Sets the spdlog level");
-            app.add_option("--n-threads", n_threads, "Set number of threads to use");
-            app.add_option("--exchange-freq", exchange_freq, "Replicas exchange frequency");
-            app.add_option("--cluster-freq",cluster_freq, "Replicas cluster frequency");
-            app.add_option("--beta", beta, "ist of betas for parallel tempering");
+        Options();
 
-
-            // class member
-            app.add_flag("--debug", debug, "Enable debug logging");
-
-            app.set_config("--config", "", "Path to optional config file");
-        }
-
-        int parse(int argc, char* argv[]) {
+        int parse(int argc, char *argv[]) {
             try {
                 app.parse(argc, argv); // instead of CLI11_PARSE macro inside a non-main function
-            }
-            catch (const CLI::ParseError& e) {
+            } catch (const CLI::ParseError &e) {
                 return app.exit(e);
             }
 
@@ -108,7 +78,7 @@ namespace lft::ea {
         int exchange_freq = 0;
         int cluster_freq = 0;
 
-        YAML::Emitter& emit();
+        YAML::Emitter &emit();
 
     private:
         YAML::Emitter yaml;

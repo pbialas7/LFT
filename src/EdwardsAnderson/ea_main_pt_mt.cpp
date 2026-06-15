@@ -38,20 +38,20 @@ inline std::string format_hms(double total_seconds) {
 
     std::ostringstream oss;
     oss << std::setfill('0') << std::setw(2) << h << ":"
-        << std::setw(2) << m << ":" << std::setw(2) << s;
+            << std::setw(2) << m << ":" << std::setw(2) << s;
     return oss.str();
 }
 
 inline void print_progress_bar(
     std::int64_t current_iteration, // 1-based preferred
     std::int64_t final_iterations,
-    const std::chrono::high_resolution_clock::time_point& start_time,
+    const std::chrono::high_resolution_clock::time_point &start_time,
     int bar_width = 40) {
     if (final_iterations <= 0) return;
 
     current_iteration = std::clamp<std::int64_t>(current_iteration, 0, final_iterations);
     const double progress = static_cast<double>(current_iteration) /
-        static_cast<double>(final_iterations);
+                            static_cast<double>(final_iterations);
 
     const int filled = static_cast<int>(progress * bar_width);
 
@@ -69,10 +69,10 @@ inline void print_progress_bar(
         std::cout << (i < filled ? '#' : '-');
     }
     std::cout << "] "
-        << std::setw(3) << static_cast<int>(progress * 100.0) << "% "
-        << "elapsed " << format_hms(elapsed) << " "
-        << "eta " << format_hms(eta)
-        << std::flush;
+            << std::setw(3) << static_cast<int>(progress * 100.0) << "% "
+            << "elapsed " << format_hms(elapsed) << " "
+            << "eta " << format_hms(eta)
+            << std::flush;
 
     if (current_iteration == final_iterations) {
         std::cout << "\n";
@@ -84,8 +84,8 @@ inline void print_progress_bar(
  * If ising is true, it initializes with 1. If binary is true, it initializes with +/-1.
  * Otherwise, it initializes with Gaussian random numbers.
  */
-template <typename Field, typename RNG>
-void init_field(Field& field, const std::string& file_path, bool binary, bool ising, RNG& rng) {
+template<typename Field, typename RNG>
+void init_field(Field &field, const std::string &file_path, bool binary, bool ising, RNG &rng) {
     if (file_path.empty()) {
         if (!ising) {
             if (binary)
@@ -93,8 +93,7 @@ void init_field(Field& field, const std::string& file_path, bool binary, bool is
             else
                 lft::ea::init_gaussian(field, rng);
         }
-    }
-    else {
+    } else {
         std::ifstream ifs(file_path, std::ios::in);
         if (!ifs) {
             spdlog::error("Error opening file : {}", file_path);
@@ -114,9 +113,9 @@ void init_field(Field& field, const std::string& file_path, bool binary, bool is
 
 using lattice_t = lft::Lattice<uint32_t>;
 
-void measure_em(std::fstream* em_stream_ptr,
-                lft::ea::Replicas<lattice_t>& replicas,
-                const lft::ea::JField<float, lattice_t>& j_field) {
+void measure_em(std::fstream *em_stream_ptr,
+                lft::ea::Replicas<lattice_t> &replicas,
+                const lft::ea::JField<float, lattice_t> &j_field) {
     if (em_stream_ptr) {
         for (int j = 0; j < replicas.n_replicas; ++j) {
             *em_stream_ptr << lft::ea::energy<double>(*replicas[j], j_field) << " ";
@@ -125,15 +124,14 @@ void measure_em(std::fstream* em_stream_ptr,
         if (replicas.n_replicas > 1) {
             *em_stream_ptr << lft::ea::overlap<double>(*replicas[0], *replicas[1]) << " ";
             *em_stream_ptr << lft::ea::link_overlap<double>(*replicas[0], *replicas[1]) << "\n";
-        }
-        else
+        } else
             *em_stream_ptr << "\n";
         em_stream_ptr->flush();
     }
 }
 
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     auto max_threads = std::thread::hardware_concurrency();
 
     lft::ea::Options options;
@@ -154,6 +152,13 @@ int main(int argc, char* argv[]) {
     );
     options_stream << options.emit().c_str() << std::endl;
     options_stream.close();
+
+    auto options_toml_stream = std::fstream(
+        make_file_path(options.data_dir, "opt", options.Lx, options.Ly, options.name, "toml"),
+        std::ios::out
+    );
+    options_toml_stream << options.app.config_to_str(CLI::ConfigOutputMode::AllDefaults) << std::endl;
+    options_toml_stream.close();
 
     set_log_level(options.spdlog_level);
     omp_set_num_threads(options.n_threads);
@@ -239,7 +244,7 @@ int main(int argc, char* argv[]) {
     // Creating output files
 
     // Energy and magnetization
-    std::vector<std::fstream*> em_stream_ptrs(options.n_betas(), nullptr);
+    std::vector<std::fstream *> em_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         em_stream_ptrs[i] = optional_fstream_ptr(
             make_file_path(options.data_dir, "em", options.Lx, options.Ly,
@@ -248,7 +253,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Configuration files
-    std::vector<std::fstream*> cfg_stream_ptrs(options.n_betas(), nullptr);
+    std::vector<std::fstream *> cfg_stream_ptrs(options.n_betas(), nullptr);
     for (int i = 0; i < options.n_betas(); ++i) {
         cfg_stream_ptrs[i] = optional_fstream_ptr(
             make_file_path(options.data_dir, "cfg", options.Lx, options.Ly, options.name + std::format("_b{:02d}", i),
