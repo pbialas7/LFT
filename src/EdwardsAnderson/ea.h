@@ -14,36 +14,53 @@
 #include "Field/Field.h"
 
 namespace lft::ea {
-    template<typename L>
+    template <typename L>
     using SpinField = lft::Field<int8_t, L>;
-    template<typename L>
+    template <typename L>
     using JLattice = lft::Lattice<typename L::index_t, L::DIM + 1>;
-    template<typename F, typename L>
-    using JField = lft::Field<F, JLattice<L> >;
+    template <typename F, typename L>
+    using JField = lft::Field<F, JLattice<L>>;
 
 
-    template<typename F, typename RNG>
-    void init_bernoulli(F &j_field, RNG &rng) {
-        std::bernoulli_distribution bern(0.5);
+    template <typename F, typename RNG>
+    void init_bernoulli(F& j_field, double p, RNG& rng) {
+        std::bernoulli_distribution bern(p);
         for (int i = 0; i < j_field.n_elements; ++i) {
             if (bern(rng)) {
                 j_field[i] = 1;
-            } else {
+            }
+            else {
                 j_field[i] = -1;
             }
         }
     }
 
-    template<typename F, typename RNG>
-    void init_gaussian(F &j_field, RNG &rng) {
-        std::normal_distribution<float> normal(0.0f, 1.0f);
+    template <typename F, typename RNG>
+    void init_bernoulli(F& j_field, RNG& rng) {
+        init_bernoulli(j_field, 0.5, rng);
+    }
+
+
+    template <typename F, typename RNG>
+    void init_gaussian(F& j_field,
+                       typename F::field_t mu,
+                       typename F::field_t sigma,
+                       RNG& rng) {
+        using f_type = F::field_t;
+        std::normal_distribution<f_type> normal(mu, sigma);
         for (int i = 0; i < j_field.n_elements; ++i) {
             j_field[i] = normal(rng);
         }
     }
 
+    template <typename F, typename RNG>
+    void init_gaussian(F& j_field, RNG& rng) {
+        using f_type = F::field_t;
+        init_gaussian(j_field, f_type(0.0), f_type(1.0), rng);
+    }
 
-    template<typename F, typename L>
+
+    template <typename F, typename L>
     struct HeathBath {
         using size_t = L::size_t;
         using index_t = L::index_t;
@@ -52,17 +69,15 @@ namespace lft::ea {
         using field_t = field_class::field_t;
 
 
-        HeathBath(const JField<F, L> &j) : j_(j), j_lat_(j.lat), beta_() {
-        }
+        HeathBath(const JField<F, L>& j) : j_(j), j_lat_(j.lat), beta_() {}
 
-        HeathBath(F beta, const JField<F, L> &j) : beta_(beta), j_(j), j_lat_(j.lat) {
-        }
+        HeathBath(F beta, const JField<F, L>& j) : beta_(beta), j_(j), j_lat_(j.lat) {}
 
         void set_beta(F beta) { beta_ = beta; }
 
 
-        template<typename R>
-        size_t update(field_class &field, size_t i, R &rng) {
+        template <typename R>
+        size_t update(field_class& field, size_t i, R& rng) {
             auto r = std::log(F(1.0) / u_(rng) - F(1.0));
             F corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
@@ -85,8 +100,8 @@ namespace lft::ea {
             return 1;
         }
 
-        template<typename R, typename UDist>
-        size_t update_with_dist(field_class &field, size_t i, R &rng, UDist &u) {
+        template <typename R, typename UDist>
+        size_t update_with_dist(field_class& field, size_t i, R& rng, UDist& u) {
             auto r = std::log(F(1.0) / u(rng) - F(1.0));
             F corona = 0.0;
             for (auto d = 0; d < L::DIM; ++d) {
@@ -109,15 +124,15 @@ namespace lft::ea {
             return 1;
         }
 
-        template<typename R>
-        size_t operator()(field_class &field, size_t i, R &rng) {
+        template <typename R>
+        size_t operator()(field_class& field, size_t i, R& rng) {
             return update(field, i, rng);
         }
 
 
-        template<typename RNG>
-        size_t sweep(SpinField<L> &field, RNG &rng) {
-            auto &lat = field.lat;
+        template <typename RNG>
+        size_t sweep(SpinField<L>& field, RNG& rng) {
+            auto& lat = field.lat;
             size_t accepted = 0;
             for (size_t i = 0; i < lat.n_elements / 2; i++) {
                 auto site = lat.even(i);
@@ -133,13 +148,13 @@ namespace lft::ea {
         }
 
 
-        template<typename SWEEP_RNG>
-        size_t sweep_mt(SpinField<L> &field, SWEEP_RNG &rng) {
+        template <typename SWEEP_RNG>
+        size_t sweep_mt(SpinField<L>& field, SWEEP_RNG& rng) {
             size_t accepted = 0;
 #pragma omp parallel shared(field, rng) reduction(+:accepted)
             {
                 const int t = omp_get_thread_num();
-                auto &rng_t = rng[t];
+                auto& rng_t = rng[t];
                 std::uniform_real_distribution<F> u_local;
 #pragma omp  parallel for  shared(rng) schedule(static)
                 for (size_t i = 0; i < field.lat.n_elements / 2; i++) {
@@ -164,13 +179,13 @@ namespace lft::ea {
         JLattice<L> j_lat_;
     };
 
-    template<typename Float, typename F>
-    Float magnetisation(const F &f) {
+    template <typename Float, typename F>
+    Float magnetisation(const F& f) {
         return sum<Float>(f);
     }
 
-    template<typename Float, typename F, typename JF>
-    Float energy(const F &field, const JF &j_) {
+    template <typename Float, typename F, typename JF>
+    Float energy(const F& field, const JF& j_) {
         Float e = 0.0;
         for (int i = 0; i < field.n_elements; ++i) {
             double corona = 0.0;
@@ -187,8 +202,8 @@ namespace lft::ea {
     }
 
 
-    template<typename Float, typename F, typename JF>
-    Float energy_dn(const F &field, const JF &j_) {
+    template <typename Float, typename F, typename JF>
+    Float energy_dn(const F& field, const JF& j_) {
         Float e = 0.0;
         for (int i = 0; i < field.n_elements; ++i) {
             double corona = 0.0;
@@ -204,8 +219,8 @@ namespace lft::ea {
         return -e;
     }
 
-    template<typename Float, typename F>
-    Float overlap(const F &f1, const F &f2) {
+    template <typename Float, typename F>
+    Float overlap(const F& f1, const F& f2) {
         Float overlap_ = 0.0;
         for (int i = 0; i < f1.n_elements; ++i) {
             overlap_ += f1[i] * f2[i];
@@ -213,8 +228,8 @@ namespace lft::ea {
         return overlap_ / f1.n_elements;
     }
 
-    template<typename Float, typename F>
-    Float link_overlap(const F &field1, const F &field2) {
+    template <typename Float, typename F>
+    Float link_overlap(const F& field1, const F& field2) {
         Float link_overlap_ = 0.0;
         for (int i = 0; i < field1.n_elements; ++i) {
             for (auto d = 0; d < F::DIM; ++d) {

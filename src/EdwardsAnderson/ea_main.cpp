@@ -29,7 +29,7 @@ namespace fs = std::filesystem;
  * Otherwise, it initializes with Gaussian random numbers.
  */
 template <typename Field, typename RNG>
-void init_field(Field& field, const std::string& file_path, bool binary, bool ising, RNG& rng) {
+void init_j_field(Field& field, const std::string& file_path, bool binary, bool ising, RNG& rng) {
     if (file_path.empty()) {
         if (!ising) {
             if (binary)
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     lattice_t lat({options.Lx, options.Ly}, 'C');
     lft::ea::JLattice<lattice_t> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
     auto j_field = lft::make_field(j_lat, 1.0f);
-    init_field(j_field, options.j_file_path, options.binary, options.ising, rng);
+    init_j_field(j_field, options.j_file_path, options.binary, options.ising, rng);
 
     // Writing out the J link variables
     auto j_path = make_file_path(options.data_dir, "j", options.name, "txt");
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < options.n_betas(); ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             temperer.chains[i][j] = new lft::ea::SpinField(lat, 1);
-            init_field(*temperer.chains[i][j], "", true, options.cold_start, rng);
+            init_j_field(*temperer.chains[i][j], "", true, options.cold_start, rng);
         }
     }
 
