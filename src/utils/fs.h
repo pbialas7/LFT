@@ -5,10 +5,10 @@
 #pragma once
 
 #include <filesystem>
+namespace fs = std::filesystem;
 #include <ostream>
 #include <fstream>
 
-namespace fs = std::filesystem;
 
 fs::path make_file_path(const fs::path &data_dir, const std::string &prefix, int Lx, int Ly, const std::string &name,
                         const std::string &extension);

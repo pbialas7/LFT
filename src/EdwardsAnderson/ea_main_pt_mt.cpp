@@ -8,8 +8,6 @@
 namespace fs = std::filesystem;
 #include <thread>
 
-#include <iostream>
-#include <string>
 
 #include<omp.h>
 
@@ -24,6 +22,32 @@ namespace fs = std::filesystem;
 #include "parallel_tempering_mt.h"
 #include "options_cli11.h"
 
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <algorithm>
+
+inline std::string format_hms(double total_seconds) {
+    if (total_seconds < 0) total_seconds = 0;
+    long long s = static_cast<long long>(total_seconds + 0.5); // round
+    long long h = s / 3600;
+    s %= 3600;
+    long long m = s / 60;
+    s %= 60;
+
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << h << ":"
+            << std::setw(2) << m << ":" << std::setw(2) << s;
+    return oss.str();
+}
+
+inline void print_progress_bar(
+    std::int64_t current_iteration, // 1-based preferred
+    std::int64_t final_iterations,
+    const std::chrono::high_resolution_clock::time_point &start_time,
+    int bar_width = 40) {
+    if (final_iterations <= 0) return;
 
 #include "utils/progress_bar.h"
 
