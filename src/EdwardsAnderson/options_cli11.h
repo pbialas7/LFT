@@ -60,6 +60,7 @@ namespace lft::ea {
         std::vector<float> beta;
         uint32_t Lx = 0;
         uint32_t Ly = 0;
+        uint32_t Lz = 0;
         int save_freq = 0;
         int n_term = 0;
         int n_sweeps = 0;

@@ -13,6 +13,12 @@ fs::path make_file_path(const fs::path &data_dir, const std::string &prefix, int
     return data_dir / file_name;
 }
 
+fs::path make_file_path(const fs::path &data_dir, const std::string &prefix, int Lx, int Ly, int Lz, const std::string &name,
+                        const std::string &extension) {
+    auto file_name = std::format("{}_{:02d}x{:02d}x{:02d}_{}.{}", prefix, Lx, Ly, Lz, name, extension);
+    return data_dir / file_name;
+}
+
 fs::path make_file_path(const fs::path &data_dir, const std::string &prefix, const std::string &name, const std::string &extension) {
     auto file_name = prefix + "_" + name + "."+extension;
     return data_dir / file_name;
