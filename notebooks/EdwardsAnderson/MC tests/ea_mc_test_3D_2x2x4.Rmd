@@ -79,17 +79,13 @@ def hist_int(a,*,bin_width,**kwargs):
 ```
 
 ```{python}
-J_DZ = np.loadtxt(run_path/"J_12_12_12_DZ.txt").reshape(3,12,12,12)
+Lx = 2
+Ly = 2
+Lz = 4
 ```
 
 ```{python}
-Lx = 12
-Ly = 12
-Lz = 12
-```
-
-```{python}
-tag = "bc_run01"
+tag = "test02"
 ```
 
 ```{python}
@@ -100,6 +96,10 @@ name = f"{Lx:02d}x{Ly:02d}x{Lz:02d}_{tag}"
 options = tu.read_options(data_path, name)    
 n_betas=len(options['beta'])
 print(options['beta'])
+```
+
+```{python}
+beta=options['beta'][0]
 ```
 
 ```{python}
@@ -115,7 +115,7 @@ J.shape
 ```
 
 ```{python}
-np.allclose(J_DZ,J)
+J[0,0]
 ```
 
 ```{python}
@@ -129,14 +129,6 @@ tau
 ```
 
 ```{python}
-em[0,:,0].mean()
-```
-
-```{python}
-torch_bootstrap(em[0,:,0],n_samples=200, binsize=5)
-```
-
-```{python}
 i=0
 cfgs = torch.from_numpy(
     np.fromfile(f"{data_path}/cfg_{name}_b{i:03d}.bin", dtype="int8"
@@ -144,23 +136,51 @@ cfgs = torch.from_numpy(
 ```
 
 ```{python}
-torch.allclose(Energy3D(cfgs[:,0],J) , em[0,:,0])
+cfgs.shape
 ```
 
 ```{python}
-bc=np.log(1+np.sqrt(2))/2
+spins = fast_gen_states(Lx*Ly*Lz).view(-1,Lx,Ly,Lz)
 ```
 
 ```{python}
-bc
+spins.shape
 ```
 
 ```{python}
-J = np.loadtxt(data_path/"j_12x12x12_test03.txt")
+spins_e = Energy3D(spins,J)
 ```
 
 ```{python}
-np.allclose(J,J_DZ)
+Z = torch.exp(-beta*spins_e).sum()
+```
+
+```{python}
+e_th = torch.sum(spins_e*torch.exp(-beta*spins_e))/Z
+```
+
+```{python}
+e_th.item()
+```
+
+```{python}
+em[0,:,0].mean()
+```
+
+```{python}
+e_val, e_err = torch_bootstrap(em[0,:,0],n_samples=200, binsize=10)
+```
+
+```{python}
+e_val.item()
+```
+
+```{python}
+e_err.item()
+```
+
+```{python}
+
 ```
 
 ```{python}
