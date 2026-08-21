@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
     int corr_freq = 0;
     int save_freq = 0;
     bool wolff = false;
+    bool info = false;
     int n_clusters = 16;
     int tune_wolff = 0;
 
@@ -44,6 +45,7 @@ int main(int argc, char* argv[]) {
         | lyra::opt(n_term, "n term ")["-t"]["--n-term"]("number of termalisation sweeps")
         | lyra::opt(cold_start)["-c"]["--cold-start"]("cold start")
         | lyra::opt(wolff)["-w"]["--wolff"]("use Wolff algorithm")
+        | lyra::opt(info)["--info"]("enable info logging")
 
         | lyra::opt(seed, "seed")["--seed"]("seed")
         | lyra::opt(name, "name")["--name"]("name")
@@ -65,7 +67,7 @@ int main(int argc, char* argv[]) {
         exit(0);
     }
     std::mt19937_64 rng(seed);
-    spdlog::default_logger()->set_level(spdlog::level::warn);
+    spdlog::default_logger()->set_level(info ? spdlog::level::info : spdlog::level::warn);
 
     spdlog::debug("Lx {} Ly {} beta {} n-sweeps {} seed {} cold-start {}", Lx, Ly, beta, n_sweeps, seed, cold_start);
 
@@ -122,6 +124,7 @@ int main(int argc, char* argv[]) {
     auto cfg_path = make_file_path(data_dir, "cfg", name, "bin");
     auto edges_path = make_file_path(data_dir, "edges", name, "bin");
 
+    spdlog::info("Saving energy and magnetization to {}", em_path.string());
     std::fstream energy_mag{em_path, std::fstream::out | std::fstream::trunc};
     std::fstream correlations{
         corr_path, std::fstream::binary | std::fstream::out | std::fstream::trunc
