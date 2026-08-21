@@ -29,7 +29,7 @@ def read_options(data_dir, name):
 def read_em_files(data_dir, name, betas):
     em = []
     for i, _ in enumerate(betas):
-        em.append(torch.from_numpy(np.loadtxt(f"{data_dir}/em_{name}_b{i:02d}.txt")))
+        em.append(torch.from_numpy(np.loadtxt(f"{data_dir}/em_{name}_b{i:03d}.txt")))
     lengths = [len(x) for x in em]
     min_length = min(lengths)
     em_ = [x[:min_length] for x in em]

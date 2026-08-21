@@ -58,11 +58,11 @@ Energy(spins,J)
 ```
 
 ```{python}
-name ='4x6_b0900'
+name ='4x6_b0600'
 ```
 
 ```{python}
-beta = 0.9
+beta = 0.6
 ```
 
 ```{python}
@@ -99,7 +99,7 @@ tau
 ```
 
 ```{python}
-plt.hist(em[:,0], bins=50);
+plt.hist(em[:,0], bins=50, density=True);
 ```
 
 ```{python}
@@ -115,7 +115,8 @@ energy
 ```
 
 ```{python}
-plt.hist(energy,bins=50, weights=np.exp(-beta*energy), );
+plt.hist(energy,bins=50, weights=np.exp(-beta*energy.numpy()), density=True);
+plt.hist(em[:,0], bins=50, density=True);
 ```
 
 ```{python}
