@@ -36,3 +36,5 @@ notebooks/EdwardsAnderson/Transformers/numpy
 
 ea_pt_mt_test/
 ea_test/
+EA_runs/data
+EA_runs/data_3D
