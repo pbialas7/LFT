@@ -28,86 +28,10 @@ namespace fs = std::filesystem;
 #include <string>
 #include <algorithm>
 
-inline std::string format_hms(double total_seconds) {
-    if (total_seconds < 0) total_seconds = 0;
-    long long s = static_cast<long long>(total_seconds + 0.5); // round
-    long long h = s / 3600;
-    s %= 3600;
-    long long m = s / 60;
-    s %= 60;
-
-    std::ostringstream oss;
-    oss << std::setfill('0') << std::setw(2) << h << ":"
-        << std::setw(2) << m << ":" << std::setw(2) << s;
-    return oss.str();
-}
-
-
 #include "utils/progress_bar.h"
-
-
-/**
- * Initializes the field with either random values or from a file. If file_path is empty, it initializes randomly.
- * If ising is true, it initializes with 1. If binary is true, it initializes with +/-1.
- * Otherwise, it initializes with Gaussian random numbers.
- */
-template <typename Field, typename RNG>
-void init_j_field(Field& field, const std::string& file_path, bool binary, bool ising, RNG& rng) {
-    if (file_path.empty()) {
-        if (!ising) {
-            if (binary)
-                lft::ea::init_bernoulli(field, rng);
-            else
-                lft::ea::init_gaussian(field, rng);
-        }
-    }
-    else {
-        std::ifstream ifs(file_path, std::ios::in);
-        if (!ifs) {
-            spdlog::error("Error opening file : {}", file_path);
-            exit(1);
-        }
-        spdlog::info("Reading link variables from {}", file_path);
-        for (std::size_t i = 0; i < field.lat.n_elements; ++i) {
-            float val = 7.0;
-            if (!(ifs >> val)) {
-                spdlog::error("File  {} too short at {}", file_path, i);
-                exit(1);
-            }
-            field[i] = val;
-        }
-    }
-}
-
-template <typename L, typename RNG>
-void init_spin_field(lft::ea::SpinField<L>& field, bool cold_start, RNG& rng) {
-    if (cold_start) {
-        field.fill(1);
-    }
-    else {
-        lft::ea::init_bernoulli(field, rng);
-    }
-}
+#include "ea_io.h"
 
 using lattice_t = lft::Lattice<uint32_t, 3>;
-
-void measure_em(std::fstream* em_stream_ptr,
-                lft::ea::Replicas<lattice_t>& replicas,
-                const lft::ea::JField<float, lattice_t>& j_field) {
-    if (em_stream_ptr) {
-        for (int j = 0; j < replicas.n_replicas; ++j) {
-            *em_stream_ptr << lft::ea::energy<double>(*replicas[j], j_field) << " ";
-            *em_stream_ptr << lft::ea::magnetisation<double>(*replicas[j]) << " ";
-        }
-        if (replicas.n_replicas > 1) {
-            *em_stream_ptr << lft::ea::overlap<double>(*replicas[0], *replicas[1]) << " ";
-            *em_stream_ptr << lft::ea::link_overlap<double>(*replicas[0], *replicas[1]) << "\n";
-        }
-        else
-            *em_stream_ptr << "\n";
-        em_stream_ptr->flush();
-    }
-}
 
 
 int main(int argc, char* argv[]) {
@@ -164,7 +88,7 @@ int main(int argc, char* argv[]) {
     lat.require_checkerboard();
     lft::ea::JLattice<lattice_t> j_lat({3, lat.dims[0], lat.dims[1], lat.dims[2]}, 'C');
     auto j_field = lft::make_field(j_lat, 1.0f);
-    init_j_field(j_field, options.j_file_path, options.binary, options.ising, j_rng);
+    lft::ea::init_j_field(j_field, options.j_file_path, options.binary, options.ising, j_rng);
 
     // Writing out the J link variables
     auto j_path = make_file_path(options.data_dir, "j", options.Lx, options.Ly, options.Lz, options.name, "txt");
@@ -185,7 +109,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < options.n_betas(); ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             temperer.chains[i][j] = new lft::ea::SpinField(lat, 1);
-            init_spin_field(*temperer.chains[i][j], options.cold_start, rng);
+            lft::ea::init_spin_field(*temperer.chains[i][j], options.cold_start, rng);
         }
     }
 
@@ -293,7 +217,7 @@ int main(int argc, char* argv[]) {
         //Measurements
         if (options.meas_freq > 0 && (i % options.meas_freq) == 0) {
             for (int j = 0; j < options.n_betas(); ++j) {
-                measure_em(em_stream_ptrs[j], temperer.chains[j], j_field);
+                lft::ea::measure_em(em_stream_ptrs[j], temperer.chains[j], j_field);
             }
         }
 

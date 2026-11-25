@@ -17,6 +17,7 @@ add_executable(ea_pt_mt ea_main_pt_mt.cpp
         options_cli11.cpp
         ${SRC_COMMON}
         houdayer.h
+        ea_io.h
         ../utils/progress_bar.cpp
         ../utils/progress_bar.h
 )
@@ -30,6 +31,7 @@ add_executable(ea_pt_mt_3D ea_main_pt_mt_3D.cpp
         options_cli11.cpp
         ${SRC_COMMON}
         houdayer.h
+        ea_io.h
         ../utils/progress_bar.cpp
         ../utils/progress_bar.h
 )
