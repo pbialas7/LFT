@@ -55,6 +55,16 @@ void init_j_field(Field& field, const std::string& file_path, bool binary, bool 
     }
 }
 
+template <typename L, typename RNG>
+void init_spin_field(lft::ea::SpinField<L>& field, bool cold_start, RNG& rng) {
+    if (cold_start) {
+        field.fill(1);
+    }
+    else {
+        lft::ea::init_bernoulli(field, rng);
+    }
+}
+
 using lattice_t = lft::Lattice<uint32_t>;
 
 void measure_em(std::fstream* em_stream_ptr,
@@ -128,7 +138,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < options.n_betas(); ++i) {
         for (int j = 0; j < n_replicas; ++j) {
             temperer.chains[i][j] = new lft::ea::SpinField(lat, 1);
-            init_j_field(*temperer.chains[i][j], "", true, options.cold_start, rng);
+            init_spin_field(*temperer.chains[i][j], options.cold_start, rng);
         }
     }
 
