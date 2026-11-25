@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.18.1
+      jupytext_version: 1.19.1
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -79,12 +79,12 @@ def hist_int(a,*,bin_width,**kwargs):
 ```
 
 ```{python}
-Lx = 16
-Ly = 16
+Lx = 24
+Ly = 24
 ```
 
 ```{python}
-tag = "ctest_nocl"
+tag = "tsrun02"
 ```
 
 ```{python}
@@ -98,7 +98,19 @@ print(options['beta'])
 ```
 
 ```{python}
-J = np.loadtxt(data_path/f"j_{name}.txt").reshape(2,Lx,Ly)
+J = torch.from_numpy(np.loadtxt(data_path/f"j_{name}.txt").reshape(2,Lx,Ly))
+```
+
+```{python}
+from plaq import plaquettes_batch
+```
+
+```{python}
+k = plaquettes_batch(J.reshape(-1,2,Lx,Ly)).sum()
+```
+
+```{python}
+k
 ```
 
 ```{python}
@@ -142,8 +154,8 @@ plt.grid();
 for i,beta in enumerate(options['beta']):
     print(f"{i:3d} {beta:5.3f}",end='')
     for q in range(2):
-        val, err = torch_bootstrap(em[i][:,2*q],n_samples=100, binsize=20)
-        print(f" {val.item():8.2f} {err.item():4.2f}",end='')
+        val, err = torch_bootstrap(em[i][:,2*q],n_samples=100, binsize=10)
+        print(f" {val.item():8.2f} {err.item():4.3f}",end='')
     print()    
 ```
 
@@ -163,19 +175,7 @@ stats = tu.get_stats(em, options['beta'])
 ```
 
 ```{python}
-stats[:,0,1]
-```
-
-```{python}
-tu.compare(stats[:,0,1], stats[:,1,1])
-```
-
-```{python}
-tu.compare(stats[:,0,2], stats[:,1,2])
-```
-
-```{python}
-tag_cmp  = 'ctest_cl' 
+tag_cmp  = 'ctest01_cl' 
 ```
 
 ```{python}
@@ -227,16 +227,4 @@ for s in range(1,3):
 plt.scatter(options['beta'],stats_cmp[:,0,0,0]);
 plt.scatter(options['beta'],stats_cmp[:,1,0,0]);
 plt.grid();
-```
-
-```{python}
-8*7
-```
-
-```{python}
-1-(1-0.007)**56
-```
-
-```{python}
-
 ```

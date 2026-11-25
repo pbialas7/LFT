@@ -89,7 +89,7 @@ Lz = 12
 ```
 
 ```{python}
-tag = "bc_run01"
+tag = "b02000_run01"
 ```
 
 ```{python}
@@ -164,5 +164,30 @@ np.allclose(J,J_DZ)
 ```
 
 ```{python}
+16**3
+```
 
+```{python}
+64**2
+```
+
+```{python}
+from scipy.stats import norm
+```
+
+```{python}
+norm.sf(2.5)
+```
+
+```{python}
+np.tanh(1.2)**12
+```
+
+```{python}
+np.power(0.11,1/12)
+```
+
+```{python}
+def hb(spins):
+  spins
 ```

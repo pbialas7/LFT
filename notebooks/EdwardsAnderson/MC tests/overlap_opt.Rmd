@@ -284,7 +284,7 @@ from scipy.optimize import minimize_scalar
 
 ```{python}
 def next_b(b_s):
-  return minimize_scalar(lambda b: (ovp(b_s,b)-1/3)**2, bracket=[b_s,b_s+0.15])
+  return minimize_scalar(lambda b: (ovp(b_s,b)-1/2)**2, bracket=[b_s,b_s+0.15])
 ```
 
 ```{python}
@@ -303,6 +303,11 @@ while b<1.9:
 
 ```{python}
 i
+```
+
+```{python}
+for b in np.linspace(1/1.6,10,25):
+  print(f"{b:.4f},")
 ```
 
 ```{python}
