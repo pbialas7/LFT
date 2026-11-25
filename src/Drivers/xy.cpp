@@ -66,6 +66,7 @@ int main(int argc, char *argv[]) {
 
     using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({Lx, Ly});
+    lat.require_checkerboard();
 
     using phi_t = xy::ScalarField<lattice_t>;
     phi_t phi(lat, 1.0);

@@ -11,6 +11,7 @@
 template <typename F, typename U>
 F::lattice_t::size_t sweep(F& field, U& update) {
     auto& lat = field.lat;
+    lat.require_checkerboard();
     typename F::lattice_t::size_t accepted = 0;
     for (size_t i = 0; i < lat.n_elements / 2; i++) {
         auto site = lat.even(i);
@@ -27,6 +28,7 @@ F::lattice_t::size_t sweep(F& field, U& update) {
 
 template <typename F, typename U, typename RNG>
 F::lattice_t::size_t sweep_mt(F& field, U& update, RNG& rng) {
+    field.lat.require_checkerboard();
     typename F::lattice_t::size_t accepted = 0;
 #pragma omp parallel for reduction(+:accepted) shared(update, rng)
     for (size_t i = 0; i < field.lat.n_elements / 2; i++) {

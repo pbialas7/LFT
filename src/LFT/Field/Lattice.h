@@ -6,6 +6,8 @@
 #pragma once
 
 #include <array>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <spdlog/spdlog.h>
@@ -197,6 +199,25 @@ namespace lft {
         size_t up(size_t i, int dim) const { return nn(i, 1, dim); }
         size_t dn(size_t i, int dim) const { return nn(i, -1, dim); }
 
+
+        /*
+         * The even/odd split is a valid checkerboard (no site has a neighbour of the same parity, so each
+         * sublattice can be updated in parallel and has exactly n_elements/2 sites) only if every extent is even.
+         * With an odd extent the periodic wrap joins sites of equal parity.
+         */
+        bool has_checkerboard() const {
+            for (auto d : dims)
+                if (d % 2 != 0) return false;
+            return true;
+        }
+
+        // Throws std::invalid_argument if the even/odd checkerboard is not valid for this lattice.
+        void require_checkerboard() const {
+            for (int j = 0; j < DIM; ++j)
+                if (dims[j] % 2 != 0)
+                    throw std::invalid_argument("Checkerboard update requires even lattice extents, but extent " +
+                                                std::to_string(j) + " is " + std::to_string(dims[j]));
+        }
 
         size_t even(size_t i) const { return even_[i]; }
 

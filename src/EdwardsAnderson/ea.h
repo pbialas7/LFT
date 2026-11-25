@@ -133,6 +133,7 @@ namespace lft::ea {
         template <typename RNG>
         size_t sweep(SpinField<L>& field, RNG& rng) {
             auto& lat = field.lat;
+            lat.require_checkerboard();
             size_t accepted = 0;
             for (size_t i = 0; i < lat.n_elements / 2; i++) {
                 auto site = lat.even(i);
@@ -150,6 +151,7 @@ namespace lft::ea {
 
         template <typename SWEEP_RNG>
         size_t sweep_mt(SpinField<L>& field, SWEEP_RNG& rng) {
+            field.lat.require_checkerboard();
             size_t accepted = 0;
 #pragma omp parallel shared(field, rng) reduction(+:accepted)
             {

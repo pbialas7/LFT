@@ -140,3 +140,29 @@ TEST_CASE("Lattice even/odd", "[Lattice][Even/Odd]") {
     REQUIRE(lattice.odd(6) == 12);
     REQUIRE(lattice.odd(7) == 14);
 }
+
+
+TEST_CASE("Lattice checkerboard requires even extents", "[Lattice][Even/Odd]") {
+    SECTION("even extents are accepted and neighbours have opposite parity") {
+        Lattice<uint32_t> lattice({4, 6});
+        REQUIRE(lattice.has_checkerboard());
+        REQUIRE_NOTHROW(lattice.require_checkerboard());
+        REQUIRE(lattice.n_elements == 24);
+        std::vector<bool> is_even(lattice.n_elements, false);
+        for (std::size_t i = 0; i < lattice.n_elements / 2; ++i) is_even[lattice.even(i)] = true;
+        for (std::size_t i = 0; i < lattice.n_elements / 2; ++i) {
+            auto s = lattice.even(i);
+            for (int d = 0; d < 2; ++d) {
+                REQUIRE_FALSE(is_even[lattice.up(s, d)]);
+                REQUIRE_FALSE(is_even[lattice.dn(s, d)]);
+            }
+        }
+    }
+    SECTION("any odd extent is rejected") {
+        REQUIRE_THROWS_AS(Lattice<uint32_t>({3, 4}).require_checkerboard(), std::invalid_argument);
+        REQUIRE_THROWS_AS(Lattice<uint32_t>({4, 3}).require_checkerboard(), std::invalid_argument);
+        REQUIRE_THROWS_AS(Lattice<uint32_t>({3, 3}).require_checkerboard(), std::invalid_argument);
+        REQUIRE_THROWS_AS((Lattice<uint32_t, 1>({5}).require_checkerboard()), std::invalid_argument);
+        REQUIRE_FALSE(Lattice<uint32_t>({3, 4}).has_checkerboard());
+    }
+}

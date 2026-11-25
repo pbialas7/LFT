@@ -47,6 +47,7 @@ int main(int argc, char* argv[]) {
 
     using lattice_t = lft::Lattice<uint32_t, 1>;
     lattice_t lat({Lx});
+    lat.require_checkerboard();
     ising::IsingField<lattice_t> ising(lat, 1);
     if (!cold_start)
         ising::hot_start(ising, rng);

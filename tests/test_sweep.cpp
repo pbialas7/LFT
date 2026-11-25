@@ -38,3 +38,10 @@ TEST_CASE("sweep", "[sweep]") {
         REQUIRE(int(field[i]) == 1);
     }
 }
+
+TEST_CASE("sweep rejects odd lattice extents", "[sweep]") {
+    Lattice<> lat({3, 4});
+    Field<int8_t, decltype(lat)> field(lat, -1);
+    MakeOne<Field<int8_t, decltype(lat)>> update;
+    REQUIRE_THROWS_AS(sweep(field, update), std::invalid_argument);
+}

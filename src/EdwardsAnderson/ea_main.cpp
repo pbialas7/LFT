@@ -116,6 +116,7 @@ int main(int argc, char* argv[]) {
 
     // Creating link variables
     lattice_t lat({options.Lx, options.Ly}, 'C');
+    lat.require_checkerboard();
     lft::ea::JLattice<lattice_t> j_lat({2, lat.dims[0], lat.dims[1]}, 'C');
     auto j_field = lft::make_field(j_lat, 1.0f);
     init_j_field(j_field, options.j_file_path, options.binary, options.ising, rng);

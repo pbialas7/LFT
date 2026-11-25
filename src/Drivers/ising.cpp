@@ -79,6 +79,7 @@ int main(int argc, char* argv[]) {
 
     using lattice_t = lft::Lattice<uint32_t>;
     lattice_t lat({Lx, Ly}, 'C');
+    lat.require_checkerboard();
     ising::IsingField<lattice_t> ising(lat, 1);
     // ReSharper disable once CppDFAConstantConditions
     if (!cold_start)
