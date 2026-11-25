@@ -11,7 +11,7 @@ set(SRC_COMMON
         ../utils/logging.cpp
         ../utils/logging.h)
 
-add_executable(ea_pt_mt ea_main_pt_mt.cpp
+add_executable(ea_pt_mt ea_pt_mt.cpp
         parallel_tempering_mt.h
         parallel_tempering_mt.cpp
         options_cli11.cpp
@@ -23,9 +23,10 @@ add_executable(ea_pt_mt ea_main_pt_mt.cpp
 )
 target_link_libraries(ea_pt_mt PRIVATE yaml-cpp::yaml-cpp lft spdlog::spdlog OpenMP::OpenMP_CXX CLI11::CLI11)
 target_include_directories(ea_pt_mt PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_compile_definitions(ea_pt_mt PRIVATE EA_DIM=2)
 target_compile_options(ea_pt_mt PRIVATE -g -fno-omit-frame-pointer)
 
-add_executable(ea_pt_mt_3D ea_main_pt_mt_3D.cpp
+add_executable(ea_pt_mt_3D ea_pt_mt.cpp
         parallel_tempering_mt.h
         parallel_tempering_mt.cpp
         options_cli11.cpp
@@ -37,4 +38,5 @@ add_executable(ea_pt_mt_3D ea_main_pt_mt_3D.cpp
 )
 target_link_libraries(ea_pt_mt_3D PRIVATE yaml-cpp::yaml-cpp lft spdlog::spdlog OpenMP::OpenMP_CXX CLI11::CLI11)
 target_include_directories(ea_pt_mt_3D PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_compile_definitions(ea_pt_mt_3D PRIVATE EA_DIM=3)
 target_compile_options(ea_pt_mt_3D PRIVATE -g -fno-omit-frame-pointer)
