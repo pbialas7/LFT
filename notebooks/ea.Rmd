@@ -1,0 +1,79 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.16.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+import numpy as np
+import scipy as sp
+import scipy.stats as st
+from scipy.optimize import fsolve
+from scipy.stats import linregress
+import matplotlib.pyplot as plt
+```
+
+```{python}
+from stats_utils import ac_and_tau_int
+```
+
+```{python}
+import stats_utils as su
+```
+
+```{python}
+name="b0600_32x32_b"
+```
+
+```{python}
+em_name = f"../ea/em_{name}.txt"
+```
+
+```{python}
+em = np.loadtxt(em_name)
+```
+
+```{python}
+em.shape
+```
+
+```{python}
+plt.plot(em[:,1]);
+```
+
+```{python}
+ac_and_tau_int(em[:,0])
+```
+
+```{python}
+timings = np.array([
+  [50000,4.358],
+  [100000, 7.7],
+  [500000,36.5],
+  [1000000, 60+14]
+])
+```
+
+```{python}
+res = linregress(timings[:,0], timings[:,1])
+```
+
+```{python}
+res.slope
+```
+
+```{python}
+res.intercept
+```
+
+```{python}
+
+```
