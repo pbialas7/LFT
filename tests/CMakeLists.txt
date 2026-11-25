@@ -11,6 +11,7 @@ add_executable(test test.cpp
         test_ising.cpp
         test_sweep.cpp
         test_houdayer.cpp
+        test_ea.cpp
 )
 target_include_directories(test PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(test PRIVATE lft spdlog::spdlog Catch2::Catch2)

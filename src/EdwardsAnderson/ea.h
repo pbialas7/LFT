@@ -12,6 +12,7 @@
 #include <spdlog/spdlog.h>
 
 #include "Field/Field.h"
+#include "MonteCarlo/sweep.h"
 
 namespace lft::ea {
     template <typename L>
@@ -60,6 +61,37 @@ namespace lft::ea {
     }
 
 
+    /*
+     * Sums of s_j * J_ij over the bonds attached to site i. The coupling of the bond from site i in direction d is
+     * stored at j[i + n_elements*d] (see JField), so the bond to the lower neighbour dn is stored at dn's index.
+     * Terms are added to `corona` in order, so the up and down sums can be chained into one accumulator.
+     */
+    template <typename Acc, typename SF, typename JF>
+    Acc local_field_up(const SF& field, const JF& j, std::size_t i, Acc corona = Acc(0)) {
+        for (auto d = 0; d < SF::DIM; ++d) {
+            auto idx = i + field.lat.n_elements * d;
+            corona += field[field.lat.up(i, d)] * j[idx];
+        }
+        return corona;
+    }
+
+    template <typename Acc, typename SF, typename JF>
+    Acc local_field_dn(const SF& field, const JF& j, std::size_t i, Acc corona = Acc(0)) {
+        for (auto d = 0; d < SF::DIM; ++d) {
+            auto dn_site = field.lat.dn(i, d);
+            auto idx = dn_site + field.lat.n_elements * d;
+            corona += field[dn_site] * j[idx];
+        }
+        return corona;
+    }
+
+    // Local field on site i: the sum over all 2*DIM bonds attached to it.
+    template <typename Acc, typename SF, typename JF>
+    Acc local_field(const SF& field, const JF& j, std::size_t i) {
+        return local_field_dn(field, j, i, local_field_up<Acc>(field, j, i));
+    }
+
+
     template <typename F, typename L>
     struct HeathBath {
         using size_t = L::size_t;
@@ -78,42 +110,13 @@ namespace lft::ea {
 
         template <typename R>
         size_t update(field_class& field, size_t i, R& rng) {
-            auto r = std::log(F(1.0) / u_(rng) - F(1.0));
-            F corona = 0.0;
-            for (auto d = 0; d < L::DIM; ++d) {
-                auto idx = i + field.lat.n_elements * d;
-                corona += field[field.lat.up(i, d)] * j_[idx];
-            }
-
-            for (auto d = 0; d < L::DIM; ++d) {
-                auto dn_site = field.lat.dn(i, d);
-                auto idx = dn_site + field.lat.n_elements * d;
-                corona += field[dn_site] * j_[idx];
-            }
-
-            F r_p_up = -F(2.0) * beta_ * corona;
-
-            if (r > r_p_up)
-                field[i] = 1;
-            else
-                field[i] = -1;
-            return 1;
+            return update_with_dist(field, i, rng, u_);
         }
 
         template <typename R, typename UDist>
         size_t update_with_dist(field_class& field, size_t i, R& rng, UDist& u) {
             auto r = std::log(F(1.0) / u(rng) - F(1.0));
-            F corona = 0.0;
-            for (auto d = 0; d < L::DIM; ++d) {
-                auto idx = i + field.lat.n_elements * d;
-                corona += field[field.lat.up(i, d)] * j_[idx];
-            }
-
-            for (auto d = 0; d < L::DIM; ++d) {
-                auto dn_site = field.lat.dn(i, d);
-                auto idx = dn_site + field.lat.n_elements * d;
-                corona += field[dn_site] * j_[idx];
-            }
+            F corona = local_field<F>(field, j_, i);
 
             F r_p_up = -F(2.0) * beta_ * corona;
 
@@ -130,48 +133,11 @@ namespace lft::ea {
         }
 
 
+        // One checkerboard sweep (even sites, then odd sites) using the generic lft::sweep.
         template <typename RNG>
         size_t sweep(SpinField<L>& field, RNG& rng) {
-            auto& lat = field.lat;
-            lat.require_checkerboard();
-            size_t accepted = 0;
-            for (size_t i = 0; i < lat.n_elements / 2; i++) {
-                auto site = lat.even(i);
-                accepted += update(field, site, rng);
-            }
-
-            for (auto i = 0; i < lat.n_elements / 2; i++) {
-                auto site = lat.odd(i);
-                accepted += update(field, site, rng);
-            }
-
-            return accepted;
-        }
-
-
-        template <typename SWEEP_RNG>
-        size_t sweep_mt(SpinField<L>& field, SWEEP_RNG& rng) {
-            field.lat.require_checkerboard();
-            size_t accepted = 0;
-#pragma omp parallel shared(field, rng) reduction(+:accepted)
-            {
-                const int t = omp_get_thread_num();
-                auto& rng_t = rng[t];
-                std::uniform_real_distribution<F> u_local;
-#pragma omp for schedule(static)
-                for (size_t i = 0; i < field.lat.n_elements / 2; i++) {
-                    //std::cout<<t<<" "<<i<<"\n";
-                    auto site = field.lat.even(i);
-                    accepted += update_with_dist(field, site, rng_t, u_local);
-                }
-
-#pragma omp  for  schedule(static)
-                for (auto i = 0; i < field.lat.n_elements / 2; i++) {
-                    auto site = field.lat.odd(i);
-                    accepted += update_with_dist(field, site, rng_t, u_local);
-                }
-            }
-            return accepted;
+            auto site_update = [&](field_class& f, size_t site) { return update(f, site, rng); };
+            return ::sweep(field, site_update);
         }
 
     private:
@@ -190,31 +156,7 @@ namespace lft::ea {
     Float energy(const F& field, const JF& j_) {
         Float e = 0.0;
         for (int i = 0; i < field.n_elements; ++i) {
-            double corona = 0.0;
-            for (auto d = 0; d < F::DIM; ++d) {
-                auto i_up = field.lat.up(i, d);
-                auto j_up = j_[i + field.lat.n_elements * d];
-                auto s_up = field[i_up];
-                corona += s_up * j_up;
-            }
-            e += field[i] * corona;
-        }
-
-        return -e;
-    }
-
-
-    template <typename Float, typename F, typename JF>
-    Float energy_dn(const F& field, const JF& j_) {
-        Float e = 0.0;
-        for (int i = 0; i < field.n_elements; ++i) {
-            double corona = 0.0;
-            for (auto d = 0; d < F::DIM; ++d) {
-                auto i_dn = field.lat.dn(i, d);
-                auto j_dn = j_[i_dn + field.lat.n_elements * d];
-                auto s_dn = field[i_dn];
-                corona += s_dn * j_dn;
-            }
+            double corona = local_field_up<double>(field, j_, i);
             e += field[i] * corona;
         }
 
