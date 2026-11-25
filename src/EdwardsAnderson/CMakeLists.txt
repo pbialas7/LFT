@@ -11,17 +11,6 @@ set(SRC_COMMON
         ../utils/logging.cpp
         ../utils/logging.h)
 
-add_executable(ea ea_main.cpp ea.h
-        parallel_tempering.h
-        parallel_tempering.cpp
-        options.cpp
-        ${SRC_COMMON}
-)
-target_link_libraries(ea PRIVATE yaml-cpp::yaml-cpp lft lyra spdlog::spdlog OpenMP::OpenMP_CXX)
-target_include_directories(ea PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_compile_options(ea PRIVATE -g -fno-omit-frame-pointer)
-
-
 add_executable(ea_pt_mt ea_main_pt_mt.cpp
         parallel_tempering_mt.h
         parallel_tempering_mt.cpp

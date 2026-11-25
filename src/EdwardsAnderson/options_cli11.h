@@ -16,25 +16,6 @@
 
 namespace lft::ea {
     class Options {
-        std::vector<float> split_floats(const std::string &s, char delim = ',') {
-            auto trim = [](std::string &x) {
-                while (!x.empty() && std::isspace(static_cast<unsigned char>(x.front()))) x.erase(x.begin());
-                while (!x.empty() && std::isspace(static_cast<unsigned char>(x.back()))) x.pop_back();
-            };
-
-            std::vector<float> result;
-            std::stringstream ss(s);
-            std::string token;
-
-            while (std::getline(ss, token, delim)) {
-                trim(token);
-                if (token.empty()) continue;
-                result.push_back(std::stof(token));
-            }
-
-            return result;
-        }
-
     public:
         CLI::App app;
         bool debug = false;
@@ -56,7 +37,6 @@ namespace lft::ea {
 
         int n_betas() const { return beta.size(); }
 
-        std::string raw_betas;
         std::vector<float> beta;
         uint32_t Lx = 0;
         uint32_t Ly = 0;

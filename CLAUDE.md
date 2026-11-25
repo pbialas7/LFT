@@ -16,7 +16,7 @@ cmake --build cmake-build-release --target ea_pt_mt      # one target
 cmake --build cmake-build-release --target all_targets   # all drivers, EA drivers and the test binary
 ```
 
-Executables: `ising`, `ising1d`, `ising3d`, `phi4`, `xy` (from `src/Drivers/`); `ea`, `ea_pt_mt`, `ea_pt_mt_3D` (from `src/EdwardsAnderson/`); `test`.
+Executables: `ising`, `ising1d`, `ising3d`, `phi4`, `xy` (from `src/Drivers/`); `ea_pt_mt`, `ea_pt_mt_3D` (from `src/EdwardsAnderson/`); `test`.
 
 Tests use Catch2 and are all linked into a single `test` binary (`tests/`). They are not registered with CTest. When you add a test source, also add it to the `test` executable in `tests/CMakeLists.txt`. That target has `src/` on its include path, so EA headers are included as `"EdwardsAnderson/..."`.
 
@@ -46,7 +46,7 @@ Include paths are relative to `src/LFT`, for example `#include "Field/Field.h"`.
 - `ea.h`: `SpinField<L>` (int8 spins). The couplings live in `JField<F,L>`, defined on a lattice of dimension `DIM+1` whose leading extent is the direction. The coupling from site `i` in direction `d` is stored at `j[i + n_elements*d]`. This file also holds the `HeathBath` updater (log-odds acceptance), the J initialisers (`init_bernoulli`, `init_gaussian`) and the observables `energy`, `magnetisation`, `overlap` and `link_overlap`.
 - `replicas.h`: `Replicas<L>` owns raw `SpinField*` pointers for the replicas at one β.
 - `parallel_tempering_mt.h`: `ParallelTemperingMT<L>` holds `chains[beta_idx][replica_idx]`. Tempering swaps pointers between adjacent β (`exchange`, `exchange_mt`). Threads are parallel over β chains, with one `taus` RNG per OpenMP thread from `utils/rand.h` `taus_array`. Houdayer cluster moves are in `houdayer.h`.
-- Drivers: `ea_main_pt_mt.cpp` (2D) and `ea_main_pt_mt_3D.cpp` (3D) are near duplicates. Keep them in sync when changing shared logic. Merging them is tracked as lft-i6c. `ea_main.cpp` with `parallel_tempering.h` and the Lyra-based `options.{h,cpp}` is the older single-thread version. Its `--n-threads > 1` path is broken (lft-7qj), and keeping or removing it is lft-d8t. The newer drivers use CLI11 (`options_cli11.{h,cpp}`).
+- Drivers: `ea_main_pt_mt.cpp` (2D) and `ea_main_pt_mt_3D.cpp` (3D) are near duplicates. Keep them in sync when changing shared logic. Merging them is tracked as lft-i6c. Both use CLI11 (`options_cli11.{h,cpp}`). The old single-thread `ea` driver and its Lyra options were removed (lft-d8t).
 
 ### EA run configuration and outputs
 The CLI11 options accept a TOML config through `--config file.toml`. Keys use dashes, for example `j-file`, `n-replicas` and `beta = [...]`. Examples are in `EA_runs/*.toml`. CLI flags override the config.
