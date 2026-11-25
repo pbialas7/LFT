@@ -36,8 +36,10 @@ notebooks/EdwardsAnderson/Transformers/numpy
 
 ea_pt_mt_test/
 ea_test/
-EA_runs/data
-EA_runs/data_3D
+# EA_runs: ignore run outputs and data; keep run configs (already-tracked files stay tracked)
+EA_runs/*
+!EA_runs/config_*.toml
+/ea_data/
 
 # Beads / Dolt files (added by bd init)
 .dolt/
