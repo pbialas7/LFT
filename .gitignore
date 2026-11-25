@@ -38,3 +38,10 @@ ea_pt_mt_test/
 ea_test/
 EA_runs/data
 EA_runs/data_3D
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*

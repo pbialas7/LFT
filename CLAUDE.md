@@ -1,0 +1,83 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project overview
+
+LFT ("Lattice Field Theory") is a C++20 Monte Carlo code for lattice spin/field models: Ising (1D/2D/3D), φ⁴, XY, Potts and, the main current focus, the **Edwards–Anderson (EA) spin glass** with parallel tempering, multiple replicas and Houdayer cluster moves (2D and 3D). Results are analysed in R Markdown / Python notebooks under `notebooks/`.
+
+## Build & test
+
+CMake fetches every dependency with FetchContent (spdlog, Catch2, Lyra, CLI11, glm, yaml-cpp). OpenMP is required. On macOS, libomp is expected from Homebrew. The CLion build dirs `cmake-build-{debug,release,relwithdebinfo}` (Ninja) already exist and are gitignored.
+
+```bash
+cmake -S . -B cmake-build-release -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build cmake-build-release --target ea_pt_mt      # one target
+cmake --build cmake-build-release --target all_targets   # ising ising1d ising3d phi4 xy ea_q (note: ea_q is not defined anywhere)
+```
+
+Executables: `ising`, `ising1d`, `ising3d`, `phi4`, `xy` (from `src/Drivers/`); `ea`, `ea_pt_mt`, `ea_pt_mt_3D` (from `src/EdwardsAnderson/`); `test`.
+
+Tests use Catch2 and are all linked into a single `test` binary (`tests/`). They are not registered with CTest. When you add a test source, also add it to the `test` executable in `tests/CMakeLists.txt`. That target has `src/` on its include path, so EA headers are included as `"EdwardsAnderson/..."`.
+
+The tests cover mostly the core lattice, field, Ising and sweep code. For EA, the only C++ test is `test_houdayer.cpp`. EA physics is otherwise checked against exact enumeration and other references in `notebooks/EdwardsAnderson/MC tests/`.
+
+```bash
+cmake --build cmake-build-debug --target test
+./cmake-build-debug/tests/test                 # all tests
+./cmake-build-debug/tests/test "ising sweep"   # one test case by name
+./cmake-build-debug/tests/test "[Lattice]"     # by tag
+./cmake-build-debug/tests/test --list-tests
+```
+
+`-O3 -ffast-math` is applied globally, so floating-point results are not bit-exact across changes.
+
+## Architecture
+
+### Core library: `src/LFT` (header-only INTERFACE target `lft`)
+Include paths are relative to `src/LFT`, for example `#include "Field/Field.h"`. The executables also add `src/`, for example `#include "utils/fs.h"`.
+
+- `Field/Lattice.h`: `MultiIndex<I,D>` and `Lattice<I=uint32_t, D=2>`. The lattice is periodic. It precomputes a flat nearest-neighbour table (`up(i,d)`, `dn(i,d)`) and the even/odd checkerboard site lists. Memory order is `'F'` (default) or `'C'`. The EA drivers use `'C'`.
+- `Field/Field.h`: `Field<F, L>` is a flat `std::vector` over a lattice, with `corona` helpers. `write(ostream)` dumps the raw bytes, and that is the binary format of the `cfg_*.bin` files.
+- `MonteCarlo/sweep.h`: generic `sweep` / `sweep_mt` that update even sites, then odd sites (checkerboard). The update is any callable `update(field, site[, rng])`.
+- Model headers (`Ising/`, `Phi4/`, `XY/`, `Potts/`) define field types, heat-bath/Metropolis updaters and observables in per-model namespaces.
+
+### Edwards–Anderson: `src/EdwardsAnderson` (namespace `lft::ea`)
+- `ea.h`: `SpinField<L>` (int8 spins). The couplings live in `JField<F,L>`, defined on a lattice of dimension `DIM+1` whose leading extent is the direction. The coupling from site `i` in direction `d` is stored at `j[i + n_elements*d]`. This file also holds the `HeathBath` updater (log-odds acceptance), the J initialisers (`init_bernoulli`, `init_gaussian`) and the observables `energy`, `magnetisation`, `overlap` and `link_overlap`.
+- `replicas.h`: `Replicas<L>` owns raw `SpinField*` pointers for the replicas at one β.
+- `parallel_tempering_mt.h`: `ParallelTemperingMT<L>` holds `chains[beta_idx][replica_idx]`. Tempering swaps pointers between adjacent β (`exchange`, `exchange_mt`). Threads are parallel over β chains, with one `taus` RNG per OpenMP thread from `utils/rand.h` `taus_array`. Houdayer cluster moves are in `houdayer.h`.
+- Drivers: `ea_main_pt_mt.cpp` (2D) and `ea_main_pt_mt_3D.cpp` (3D) are near duplicates. Keep them in sync when changing shared logic. `ea_main.cpp` with `parallel_tempering.h` and the Lyra-based `options.{h,cpp}` is the older single-thread version. The newer drivers use CLI11 (`options_cli11.{h,cpp}`).
+
+### EA run configuration and outputs
+The CLI11 options accept a TOML config through `--config file.toml`. Keys use dashes, for example `j-file`, `n-replicas` and `beta = [...]`. Examples are in `EA_runs/*.toml`. CLI flags override the config.
+
+Each run writes the following files into `--data-dir`. File names come from `utils/fs.cpp` `make_file_path`: `{prefix}_{Lx:03}x{Ly:03}_{name}.{ext}` in 2D and `{prefix}_{Lx:02}x{Ly:02}x{Lz:02}_{name}.{ext}` in 3D.
+- `opt_*.yaml` / `opt_*.toml`: the effective options. The TOML file can be fed back with `--config`.
+- `j_*.txt`: the couplings that were used. Pass it to `--j-file` to reuse the same disorder realisation.
+- `em_*_bNNN.txt`, one per β index: per replica, energy and magnetisation. When there are 2 or more replicas, the q overlap and link overlap of replicas 0 and 1 follow.
+- `cfg_*_bNNN.bin`: raw int8 configurations for all replicas, every `save-freq` sweeps.
+- `exch_*.txt`: parallel-tempering acceptance statistics.
+
+The notebooks read these files. See `notebooks/EdwardsAnderson/MC tests/test_utils.py` (`read_options`, `read_em_files`). Changing a file name or column layout breaks them.
+
+### Conventions
+- **Memory order is part of behaviour.** `Lattice` defaults to Fortran (`'F'`) order, while the simulation drivers explicitly use `'C'`. The indexing tests come in pairs: a default-order file and a `_C` file. Keep both paths working when you change indexing, neighbours, serialization or coordinate conventions.
+- **Use the precomputed lattice structure.** `Lattice` precomputes the periodic neighbours and the checkerboard split, and sweeps update all even sites before the odd ones, including the OpenMP variants. Model updates should use `lat.up`, `lat.dn` or `Field::corona` rather than reimplementing boundary handling.
+- **Where code lives.** Model code is template-based and lives in headers under `src/LFT`. Executable orchestration and non-template utilities live in `.cpp` files.
+- **RNG handling.** RNGs are passed by reference into update kernels. Multithreaded paths index a per-thread RNG collection with `omp_get_thread_num()`. Never share one mutable engine across OpenMP workers.
+- **Raw configuration output.** `Field::write` writes contiguous binary field values with no embedded dimensions or metadata. Keep the element type, lattice order, `make_file_path` naming and the companion option files compatible with the analysis notebooks.
+- **CLI libraries.** The Ising, φ⁴ and XY drivers parse options with Lyra. The multithreaded EA drivers use CLI11. To add an EA option:
+  - declare it in `Options`;
+  - register it in `Options::Options()` (`options_cli11.cpp`);
+  - add it to `Options::emit()` if it should be recorded with the run.
+
+### Issue tracking
+Known bugs and cleanup tasks from a full code review are tracked with beads (`bd`, prefix `lft-`). Use `bd ready` to list them, `bd show <id>` for details, and `bd close <id> --reason ...` to close one. The issue database syncs to GitHub (`refs/dolt/data`) with `bd dolt push` / `bd dolt pull`.
+
+### Notebooks
+`jupytext.toml` pairs `ipynb` with `Rmd`. Only the `.Rmd` files are tracked, and `*.ipynb` is gitignored, so edit the `.Rmd` files. `scripts/run_*_jobs.py` and `ising/run.py` are Python drivers that call the binaries in `cmake-build-release/`.
+
+## Open items (from TODO.adoc)
+- Clean up the code and documentation.
+- Parallelize EA at the level of the parallel-tempering chains.
+- 3D EA model.
