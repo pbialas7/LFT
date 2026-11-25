@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <random>
 #include <vector>
 
@@ -35,7 +36,9 @@ namespace lft::ea {
 
         auto lattice = replicas.get_lattice();
         std::vector<int> visited(lattice.n_elements, 0);
-        std::vector<int> queue(std::max(lattice.dims[0], lattice.dims[1]), 0);
+        // Stack of sites to process. Must start empty: only `start` is pushed below.
+        std::vector<int> queue;
+        queue.reserve(lattice.n_elements);
 
         queue.push_back(start);
         visited[start] = 1;
