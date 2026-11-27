@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <format>
 #include <iostream>
 #include <vector>
@@ -100,19 +101,22 @@ namespace lft::ea {
         size_t houdayer(Replicas<L>& chain, int r1, int r2, RNG& rng) {
             int i_start = choose_starting(chain, r1, r2, rng);
 
-            auto E1 = energy<float>(*chain[r1], J);
-            auto E2 = energy<float>(*chain[r2], J);
+#ifndef NDEBUG
+            // Debug check: the move conserves E1 + E2 exactly in real arithmetic. With non-integer couplings the
+            // sums round differently, so compare with a tolerance. Compiled out in Release: it costs four O(N)
+            // energy evaluations per move.
+            const double E_before = energy<double>(*chain[r1], J) + energy<double>(*chain[r2], J);
+#endif
             size_t cluster_size = 0;
             if (i_start >= 0) {
                 cluster_size = flip_cluster(chain, r1, r2, i_start);
             }
-
-            auto E1_after = energy<float>(*chain[r1], J);
-            auto E2_after = energy<float>(*chain[r2], J);
-
-            spdlog::trace("houdayer: E1 {} E2 {} E1_after {} E2_after {}", E1, E2, E1_after, E2_after);
-
-            assert(E1_after + E2_after == E1+E2);
+#ifndef NDEBUG
+            const double E_after = energy<double>(*chain[r1], J) + energy<double>(*chain[r2], J);
+            spdlog::trace("houdayer: E1+E2 before {} after {}", E_before, E_after);
+            assert(std::abs(E_after - E_before) <= 1e-9 * (std::abs(E_before) + 1.0) &&
+                "Houdayer move must conserve E1 + E2");
+#endif
 
             return cluster_size;
         }

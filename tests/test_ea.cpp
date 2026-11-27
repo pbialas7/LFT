@@ -9,6 +9,7 @@
 
 #include "Field/Lattice.h"
 #include "EdwardsAnderson/ea.h"
+#include "EdwardsAnderson/parallel_tempering_mt.h"
 
 namespace {
     template <typename L>
@@ -85,4 +86,34 @@ TEST_CASE("HeathBath sweep updates every site once", "[ea][sweep]") {
     EaSystem<L2> odd({3, 4}, true, 7);
     lft::ea::HeathBath<float, L2> hb_odd(0.7f, odd.J);
     REQUIRE_THROWS_AS(hb_odd.sweep(odd.spins, rng), std::invalid_argument);
+}
+
+TEST_CASE("ParallelTemperingMT Houdayer moves conserve E1 + E2", "[ea][houdayer]") {
+    using L2 = lft::Lattice<uint32_t, 2>;
+    EaSystem<L2> sys({8, 6}, true, 11);  // Gaussian J: the energies are not integers
+    const std::vector<float> betas{0.4f, 0.9f};
+    const int n_replicas = 4;
+    lft::ea::ParallelTemperingMT<L2> pt(n_replicas, betas.size(), betas, sys.J);
+    std::mt19937_64 init_rng(3);
+    for (std::size_t b = 0; b < betas.size(); ++b)
+        for (int r = 0; r < n_replicas; ++r)
+            pt.chains[b][r] = new lft::ea::SpinField<L2>(sys.lat, 1);
+
+    std::vector<std::mt19937_64> rngs{std::mt19937_64(5), std::mt19937_64(6)};  // one stream per chain
+    std::size_t total_cluster_size = 0;
+    for (int move = 0; move < 200; ++move) {
+        double before = 0.0;
+        for (std::size_t b = 0; b < betas.size(); ++b)
+            for (int r = 0; r < n_replicas; ++r) {
+                lft::ea::init_bernoulli(*pt.chains[b][r], init_rng);
+                before += lft::ea::energy<double>(*pt.chains[b][r], sys.J);
+            }
+        total_cluster_size += pt.houdayer(rngs);  // in Debug builds this also runs the internal assert
+        double after = 0.0;
+        for (std::size_t b = 0; b < betas.size(); ++b)
+            for (int r = 0; r < n_replicas; ++r)
+                after += lft::ea::energy<double>(*pt.chains[b][r], sys.J);
+        REQUIRE_THAT(after, Catch::Matchers::WithinAbs(before, 1e-9 * (std::abs(before) + 1)));
+    }
+    REQUIRE(total_cluster_size > 0);
 }
