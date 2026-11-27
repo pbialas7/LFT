@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <optional>
 #include <random>
 #include <vector>
 #include <string>
@@ -22,7 +23,12 @@ namespace lft::ea {
 
         Options();
 
-        int parse(int argc, char *argv[]) {
+        /*
+         * Parses the command line (and the --config file). Returns an empty optional if the program should run,
+         * or the exit code if it should stop: 0 after --help, non-zero after a parse error. In both cases CLI11 has
+         * already printed the help or the error message.
+         */
+        std::optional<int> parse(int argc, char *argv[]) {
             try {
                 app.parse(argc, argv); // instead of CLI11_PARSE macro inside a non-main function
             } catch (const CLI::ParseError &e) {
@@ -31,8 +37,7 @@ namespace lft::ea {
 
             if (debug) spdlog_level = "debug";
 
-
-            return 0;
+            return std::nullopt;
         }
 
         int n_betas() const { return beta.size(); }

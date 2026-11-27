@@ -290,7 +290,9 @@ namespace {
 
 int main(int argc, char* argv[]) {
     lft::ea::Options options;
-    options.parse(argc, argv);
+    // Stop after --help (exit code 0) or a parse error (non-zero), before anything is written.
+    if (auto exit_code = options.parse(argc, argv))
+        return *exit_code;
     spdlog::debug("data_dir after parse: '{}'", options.data_dir);
 
     return run<EA_DIM>(options);
