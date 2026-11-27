@@ -5,7 +5,9 @@
 //
 
 #include <array>
+#include <bit>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -13,6 +15,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <omp.h>
@@ -125,24 +128,81 @@ namespace {
         return streams;
     }
 
+    // NaN/inf check on the bit pattern: -ffast-math (-ffinite-math-only) lets the compiler fold std::isfinite to true.
+    inline bool is_finite(float x) {
+        return (std::bit_cast<std::uint32_t>(x) & 0x7f800000u) != 0x7f800000u;
+    }
+
+    /*
+     * Checks the options before anything is written. Logs every problem found and returns false if the run must
+     * not start. Inconsistent but harmless combinations only produce a warning.
+     */
+    template <int DIM>
+    bool validate(const lft::ea::Options& options) {
+        bool ok = true;
+        auto fail = [&](const std::string& msg) {
+            spdlog::error("{}", msg);
+            ok = false;
+        };
+
+        const auto dims = lattice_dims<DIM>(options);
+        for (auto d : dims) {
+            if (d == 0 || d % 2 != 0) {
+                fail(std::format("Invalid lattice size {}: every extent must be positive and even "
+                                 "(the checkerboard update needs even extents)", dims_string(dims)));
+                break;
+            }
+        }
+        if (DIM == 2 && options.Lz != 0)
+            fail(std::format("--Lz {} given to the 2D driver; use ea_pt_mt_3D for 3D lattices", options.Lz));
+
+        if (options.beta.empty())
+            fail("No betas specified");
+        for (std::size_t i = 0; i < options.beta.size(); ++i) {
+            auto b = options.beta[i];
+            if (!is_finite(b) || b < 0)
+                fail(std::format("beta[{}] = {} must be finite and non-negative", i, b));
+            if (i > 0 && !(options.beta[i - 1] < b))
+                fail(std::format("betas must be strictly increasing, but beta[{}] = {} >= beta[{}] = {}",
+                                 i - 1, options.beta[i - 1], i, b));
+        }
+
+        if (options.n_replicas < 1)
+            fail(std::format("--n-replicas must be at least 1, got {}", options.n_replicas));
+        if (options.n_threads < 1)
+            fail(std::format("--n-threads must be at least 1, got {}", options.n_threads));
+
+        const std::pair<const char*, int> non_negative[] = {
+            {"--n-sweeps", options.n_sweeps}, {"--n-term", options.n_term},
+            {"--meas-freq", options.meas_freq}, {"--save-freq", options.save_freq},
+            {"--exchange-freq", options.exchange_freq}, {"--cluster-freq", options.cluster_freq}};
+        for (const auto& [name, value] : non_negative)
+            if (value < 0)
+                fail(std::format("{} must not be negative, got {}", name, value));
+
+        if (!options.j_file_path.empty()) {
+            if (!std::ifstream(options.j_file_path))
+                fail(std::format("Cannot read the coupling file --j-file {}", options.j_file_path));
+            if (options.ising || options.binary)
+                spdlog::warn("Couplings are read from {}; --ising/--binary are ignored", options.j_file_path);
+        }
+        else if (options.ising && options.binary) {
+            spdlog::warn("Both --ising and --binary given; using --ising (J = 1)");
+        }
+
+        return ok;
+    }
+
     template <int DIM>
     int run(lft::ea::Options& options) {
         using lattice_t = lft::Lattice<uint32_t, DIM>;
         auto max_threads = std::thread::hardware_concurrency();
 
-        const auto dims = lattice_dims<DIM>(options);
-        for (auto d : dims) {
-            if (d == 0) {
-                spdlog::error("Invalid lattice size {}", dims_string(dims));
-                return 1;
-            }
-        }
-
-        if (options.beta.empty()) {
-            spdlog::error("No betas specified");
+        set_log_level(options.spdlog_level);
+        if (!validate<DIM>(options))
             return 1;
-        }
 
+        const auto dims = lattice_dims<DIM>(options);
         int n_replicas = options.n_replicas;
 
         spdlog::info("Writing to data dir = {}", options.data_dir);
@@ -160,7 +220,6 @@ namespace {
         options_toml_stream << options.app.config_to_str(CLI::ConfigOutputMode::AllDefaults) << std::endl;
         options_toml_stream.close();
 
-        set_log_level(options.spdlog_level);
         omp_set_num_threads(options.n_threads);
         spdlog::info("{} threads available, using {}", max_threads, options.n_threads);
 
@@ -295,5 +354,11 @@ int main(int argc, char* argv[]) {
         return *exit_code;
     spdlog::debug("data_dir after parse: '{}'", options.data_dir);
 
-    return run<EA_DIM>(options);
+    try {
+        return run<EA_DIM>(options);
+    }
+    catch (const std::exception& e) {
+        spdlog::error("{}", e.what());
+        return 1;
+    }
 }
