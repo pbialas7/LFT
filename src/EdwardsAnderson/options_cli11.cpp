@@ -34,6 +34,8 @@ lft::ea::Options::Options() {
     app.add_flag("--debug", debug, "Enable debug logging")->capture_default_str();
 
     app.set_config("--config", "", "Path to optional config file");
+    // An unknown key in the config file (a typo, or a YAML-style name such as meas_freq) is an error, not ignored.
+    app.allow_config_extras(CLI::config_extras_mode::error);
 }
 
 YAML::Emitter& lft::ea::Options::emit() {
