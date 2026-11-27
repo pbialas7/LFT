@@ -11,6 +11,8 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <iomanip>
+#include <limits>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -222,6 +224,27 @@ namespace {
         const auto dims = lattice_dims<DIM>(options);
         int n_replicas = options.n_replicas;
 
+        // Random number generator for initializing fields.
+        auto rng = std::mt19937_64(options.seed);
+        auto j_rng = std::mt19937_64(options.j_seed);
+
+        // Random number generators for the simulation: one stream per beta chain, so that the results do not
+        // depend on the number of threads.
+        lft::rand::taus_array taus_rng(options.n_betas());
+        taus_rng.gen_seeds(options.seed);
+
+
+        // Creating link variables. This also reads --j-file, so a bad file fails before anything is written.
+        lattice_t lat(dims, 'C');
+        lat.require_checkerboard();
+        typename lft::ea::JLattice<lattice_t>::dim_t j_dims;
+        j_dims[0] = DIM;
+        for (int d = 0; d < DIM; ++d)
+            j_dims[d + 1] = lat.dims[d];
+        lft::ea::JLattice<lattice_t> j_lat(j_dims, 'C');
+        auto j_field = lft::make_field(j_lat, 1.0f);
+        lft::ea::init_j_field(j_field, options.j_file_path, options.binary, options.ising, j_rng);
+
         spdlog::info("Writing to data dir = {}", options.data_dir);
         ensure_data_dir(options.data_dir);
         write_text_file(make_file_path(options.data_dir, "opt", dims, options.name, "yaml"),
@@ -236,31 +259,10 @@ namespace {
 
         spdlog::info("Simulating a {} lattice", dims_string(dims));
 
-        // Random number generator for initializing fields.
-        auto rng = std::mt19937_64(options.seed);
-        auto j_rng = std::mt19937_64(options.j_seed);
-
-        // Random number generators for the simulation: one stream per beta chain, so that the results do not
-        // depend on the number of threads.
-        lft::rand::taus_array taus_rng(options.n_betas());
-        taus_rng.gen_seeds(options.seed);
-
-
-        // Creating link variables
-        lattice_t lat(dims, 'C');
-        lat.require_checkerboard();
-        typename lft::ea::JLattice<lattice_t>::dim_t j_dims;
-        j_dims[0] = DIM;
-        for (int d = 0; d < DIM; ++d)
-            j_dims[d + 1] = lat.dims[d];
-        lft::ea::JLattice<lattice_t> j_lat(j_dims, 'C');
-        auto j_field = lft::make_field(j_lat, 1.0f);
-        lft::ea::init_j_field(j_field, options.j_file_path, options.binary, options.ising, j_rng);
-
         // Writing out the J link variables
         auto j_path = make_file_path(options.data_dir, "j", dims, options.name, "txt");
         auto j_file = open_checked(j_path, std::ios::out);
-        j_file << j_field << "\n";
+        lft::ea::write_j_field(j_file, j_field);
         close_checked(j_file, j_path);
 
         // Output files for the main loop: energy and magnetization, and configurations, one file per beta.
@@ -268,6 +270,10 @@ namespace {
         auto em_files = open_beta_files(options, dims, "em", "txt", options.meas_freq > 0, std::ios::out);
         auto cfg_files = open_beta_files(options, dims, "cfg", "bin", options.save_freq > 0,
                                          std::ios::out | std::ios::binary);
+        // Full double precision for the measurements (6 digits would turn large integer energies into 1.2e+06).
+        for (auto& f : em_files)
+            if (f.stream)
+                *f.stream << std::setprecision(std::numeric_limits<double>::max_digits10);
 
         //Creating chains and replicas
 

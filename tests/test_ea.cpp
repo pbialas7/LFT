@@ -5,11 +5,14 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_floating_point.hpp"
 
+#include <filesystem>
+#include <fstream>
 #include <random>
 
 #include "Field/Lattice.h"
 #include "EdwardsAnderson/ea.h"
 #include "EdwardsAnderson/parallel_tempering_mt.h"
+#include "EdwardsAnderson/ea_io.h"
 
 namespace {
     template <typename L>
@@ -116,4 +119,44 @@ TEST_CASE("ParallelTemperingMT Houdayer moves conserve E1 + E2", "[ea][houdayer]
         REQUIRE_THAT(after, Catch::Matchers::WithinAbs(before, 1e-9 * (std::abs(before) + 1)));
     }
     REQUIRE(total_cluster_size > 0);
+}
+
+TEST_CASE("J file round trip is exact and the reader checks the size", "[ea][io]") {
+    using L2 = lft::Lattice<uint32_t, 2>;
+    EaSystem<L2> sys({6, 4}, true, 21);  // Gaussian couplings need all 9 float digits
+    const auto dir = std::filesystem::temp_directory_path() / "lft_test_ea_jfile";
+    std::filesystem::create_directories(dir);
+    const auto path = dir / "j.txt";
+    {
+        std::ofstream out(path);
+        lft::ea::write_j_field(out, sys.J);
+    }
+    std::mt19937_64 unused_rng(0);
+
+    SECTION("reading back gives exactly the same couplings") {
+        auto J2 = lft::make_field(sys.j_lat, 0.0f);
+        lft::ea::init_j_field(J2, path.string(), false, false, unused_rng);
+        for (std::size_t i = 0; i < sys.J.n_elements; ++i)
+            REQUIRE(J2[i] == sys.J[i]);
+    }
+    SECTION("a file for a larger lattice is rejected") {
+        EaSystem<L2> small({4, 4}, true, 21);
+        REQUIRE_THROWS_AS(lft::ea::init_j_field(small.J, path.string(), false, false, unused_rng),
+                          std::runtime_error);
+    }
+    SECTION("a file for a smaller lattice is rejected") {
+        EaSystem<L2> large({6, 6}, true, 21);
+        REQUIRE_THROWS_AS(lft::ea::init_j_field(large.J, path.string(), false, false, unused_rng),
+                          std::runtime_error);
+    }
+    SECTION("a non-numeric value is rejected") {
+        const auto bad = dir / "bad.txt";
+        {
+            std::ofstream out(bad);
+            out << "0.5\nabc\n";
+        }
+        REQUIRE_THROWS_AS(lft::ea::init_j_field(sys.J, bad.string(), false, false, unused_rng),
+                          std::runtime_error);
+    }
+    std::filesystem::remove_all(dir);
 }

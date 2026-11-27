@@ -53,8 +53,8 @@ The CLI11 options accept a TOML config through `--config file.toml`. Keys use da
 
 Each run writes the following files into `--data-dir`. File names come from `utils/fs.cpp` `make_file_path`: `{prefix}_{Lx:03}x{Ly:03}_{name}.{ext}` in 2D and `{prefix}_{Lx:02}x{Ly:02}x{Lz:02}_{name}.{ext}` in 3D.
 - `opt_*.yaml` / `opt_*.toml`: the effective options. The TOML file can be fed back with `--config`.
-- `j_*.txt`: the couplings that were used. Pass it to `--j-file` to reuse the same disorder realisation.
-- `em_*_bNNN.txt`, one per β index: per replica, energy and magnetisation. When there are 2 or more replicas, the q overlap and link overlap of replicas 0 and 1 follow.
+- `j_*.txt`: the couplings that were used, one value per line with 9 significant digits, so they read back bit-exactly. Pass it to `--j-file` to reuse the same disorder realisation. The reader requires exactly DIM·N values and rejects a file for another lattice size or dimension.
+- `em_*_bNNN.txt`, one per β index, written with 17 significant digits: per replica, energy and magnetisation (totals, not per site). When there are 2 or more replicas, the q overlap and link overlap of replicas 0 and 1 follow.
 - `cfg_*_bNNN.bin`: raw int8 configurations for all replicas, every `save-freq` sweeps.
 - `exch_*.txt`: parallel-tempering acceptance statistics.
 
