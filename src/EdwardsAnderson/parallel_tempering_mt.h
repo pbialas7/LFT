@@ -24,8 +24,7 @@ namespace lft::ea {
         ParallelTemperingMT(int n_replicas, int n, const std::vector<float>& betas,
                             const JField<float, L>& J_a) : n_replicas(n_replicas), chains(n, Replicas<L>(n_replicas)), betas(betas), J(J_a),
                                                            heath_bath(n, J_a),
-                                                           accepted_v(n, 0), exchange_v(n, 0), cluster_size_v(n, 0),
-                                                           u(0.0, 1.0) {
+                                                           accepted_v(n, 0), exchange_v(n, 0), cluster_size_v(n, 0) {
             assert(betas.size() == n);
             for (int i = 0; i < n; ++i) {
                 heath_bath[i].set_beta(betas[i]);
@@ -34,21 +33,23 @@ namespace lft::ea {
 
 
         /*
-         * Single- and multi-threaded drivers of one operation share one implementation (the *_impl functions).
-         * They take `get_rng(t)`, which returns the RNG used by OpenMP thread t: the same engine for every thread in
-         * the single-threaded version, rng[t] in the multi-threaded one. The loops are `omp parallel for` with
-         * `if(Parallel)`, so the single-threaded version runs them in order on the calling thread.
+         * Random streams: every chain j has its own stream rngs[j] (rngs must provide at least betas.size()
+         * streams via rngs[j]). Chain j uses it for its sweeps and Houdayer moves, and the exchange of the pair
+         * (j, j+1) uses rngs[j]. The streams therefore do not depend on which OpenMP thread runs a chain, and the
+         * results are the same for any number of threads. Chains, and pairs of the same parity, are processed in
+         * parallel with `omp parallel for`; with one thread the loops run in order.
          */
 
         // Sweeps all replicas of every chain n_sweeps times. Returns the number of accepted updates.
-        template <typename RNG>
-        size_t sweep_t1(int n_sweeps, RNG& rng) {
-            return sweep_impl<false>(n_sweeps, [&](int) -> RNG& { return rng; });
-        }
-
-        template <typename RNG>
-        size_t sweep_mt(int n_sweeps, RNG& rng) {
-            return sweep_impl<true>(n_sweeps, [&](int t) -> auto& { return rng[t]; });
+        template <typename RNGS>
+        size_t sweep(int n_sweeps, RNGS& rngs) {
+            size_t acceptance = 0;
+            const int n_chains = betas.size();
+#pragma omp parallel for shared(rngs) reduction(+: acceptance) schedule(static)
+            for (int j = 0; j < n_chains; j++) {
+                acceptance += chains[j].sweep_t1(n_sweeps, heath_bath[j], rngs[j]);
+            }
+            return acceptance;
         }
 
 
@@ -62,6 +63,7 @@ namespace lft::ea {
             float E1 = energy<float>(*chains[i_b1][i_r], J);
             float E2 = energy<float>(*chains[i_b2][i_r], J);
             float delta = (E1 - E2) * (b1 - b2);
+            std::uniform_real_distribution<float> u(0.0f, 1.0f);
             auto r = u(rng);
 
             if (r < std::exp(delta)) {
@@ -74,14 +76,23 @@ namespace lft::ea {
 
         // Attempts exchanges between neighbouring betas for all replicas: first the pairs (0,1), (2,3), ..., then
         // (1,2), (3,4), .... Returns the number of accepted exchanges.
-        template <typename RNG>
-        size_t exchange(RNG& rng) {
-            return exchange_impl<false>([&](int) -> RNG& { return rng; });
-        }
-
-        template <typename RNG>
-        size_t exchange_mt(RNG& rng) {
-            return exchange_impl<true>([&](int t) -> auto& { return rng[t]; });
+        template <typename RNGS>
+        size_t exchange(RNGS& rngs) {
+            size_t accepted = 0;
+            const int n_chains = betas.size();
+            // Pairs of the same parity do not overlap, so they can be processed in parallel.
+            for (int parity = 0; parity < 2; ++parity) {
+#pragma omp parallel for shared(rngs, accepted_v, exchange_v) reduction(+: accepted) schedule(static)
+                for (int j = parity; j < n_chains - 1; j += 2) {
+                    for (int i_r = 0; i_r < n_replicas; i_r++) {
+                        auto a = exchange(j, j + 1, i_r, rngs[j]);
+                        accepted += a;
+                        accepted_v[j] += a;
+                        exchange_v[j]++;
+                    }
+                }
+            }
+            return accepted;
         }
 
 
@@ -108,14 +119,19 @@ namespace lft::ea {
 
         // Houdayer cluster moves between replicas i and i + n_replicas/2 of every chain. Returns the total size of
         // the flipped clusters; the per-chain totals are accumulated in cluster_size_v.
-        template <typename RNG>
-        size_t houdayer(RNG& rng) {
-            return houdayer_impl<false>([&](int) -> RNG& { return rng; });
-        }
-
-        template <typename RNG>
-        size_t houdayer_mt(RNG& rng) {
-            return houdayer_impl<true>([&](int t) -> auto& { return rng[t]; });
+        template <typename RNGS>
+        size_t houdayer(RNGS& rngs) {
+            size_t cluster_size = 0;
+            const int n_chains = betas.size();
+#pragma omp parallel for shared(rngs, cluster_size_v) reduction(+: cluster_size) schedule(static)
+            for (int j = 0; j < n_chains; j++) {
+                size_t chain_size = 0;
+                for (int i_r = 0; i_r < n_replicas / 2; i_r++)
+                    chain_size += houdayer(chains[j], i_r, i_r + n_replicas / 2, rngs[j]);
+                cluster_size_v[j] += chain_size;
+                cluster_size += chain_size;
+            }
+            return cluster_size;
         }
 
         void print_stats(std::ostream& os) {
@@ -130,58 +146,7 @@ namespace lft::ea {
             std::fill(exchange_v.begin(), exchange_v.end(), 0);
         }
 
-    private:
-        template <bool Parallel, typename GetRng>
-        size_t sweep_impl(int n_sweeps, GetRng get_rng) {
-            size_t acceptance = 0;
-            const int n_chains = betas.size();
-#pragma omp parallel for if(Parallel) shared(get_rng) reduction(+: acceptance) schedule(static)
-            for (int j = 0; j < n_chains; j++) {
-                auto& rng_t = get_rng(omp_get_thread_num());
-                acceptance += chains[j].sweep_t1(n_sweeps, heath_bath[j], rng_t);
-            }
-            return acceptance;
-        }
-
-        template <bool Parallel, typename GetRng>
-        size_t exchange_impl(GetRng get_rng) {
-            size_t accepted = 0;
-            const int n_chains = betas.size();
-            // Pairs of the same parity do not overlap, so they can be processed in parallel.
-            for (int parity = 0; parity < 2; ++parity) {
-#pragma omp parallel for if(Parallel) shared(get_rng, accepted_v, exchange_v) reduction(+: accepted) schedule(static)
-                for (int j = parity; j < n_chains - 1; j += 2) {
-                    auto& rng_t = get_rng(omp_get_thread_num());
-                    for (int i_r = 0; i_r < n_replicas; i_r++) {
-                        auto a = exchange(j, j + 1, i_r, rng_t);
-                        accepted += a;
-                        accepted_v[j] += a;
-                        exchange_v[j]++;
-                    }
-                }
-            }
-            return accepted;
-        }
-
-        template <bool Parallel, typename GetRng>
-        size_t houdayer_impl(GetRng get_rng) {
-            size_t cluster_size = 0;
-            const int n_chains = betas.size();
-#pragma omp parallel for if(Parallel) shared(get_rng, cluster_size_v) reduction(+: cluster_size) schedule(static)
-            for (int j = 0; j < n_chains; j++) {
-                auto& rng_t = get_rng(omp_get_thread_num());
-                size_t chain_size = 0;
-                for (int i_r = 0; i_r < n_replicas / 2; i_r++)
-                    chain_size += houdayer(chains[j], i_r, i_r + n_replicas / 2, rng_t);
-                cluster_size_v[j] += chain_size;
-                cluster_size += chain_size;
-            }
-            return cluster_size;
-        }
-
-    public:
         int n_replicas;
-        std::uniform_real_distribution<float> u;
         std::vector<Replicas<L>> chains;
         std::vector<float> betas;
         JField<float, L> J;

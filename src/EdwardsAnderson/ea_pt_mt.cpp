@@ -77,37 +77,18 @@ namespace {
 
     /**
      * One Monte Carlo step i: a sweep of all chains, then, every exchange_freq / cluster_freq steps, replica
-     * exchange and Houdayer cluster moves. Uses the multi-threaded versions if more than one thread is requested.
-     * If times is not null, the time spent in each part is added to it.
+     * exchange and Houdayer cluster moves. rngs holds one random stream per chain. If times is not null, the time
+     * spent in each part is added to it.
      */
-    template <typename PT, typename Taus>
-    void mc_step(PT& temperer, Taus& taus_rng, const lft::ea::Options& options, int i, StepTimes* times) {
-        const bool mt = options.n_threads > 1;
+    template <typename PT, typename RNGS>
+    void mc_step(PT& temperer, RNGS& rngs, const lft::ea::Options& options, int i, StepTimes* times) {
+        timed(times ? &times->sweep : nullptr, [&] { temperer.sweep(1, rngs); });
 
-        timed(times ? &times->sweep : nullptr, [&] {
-            if (mt)
-                temperer.sweep_mt(1, taus_rng);
-            else
-                temperer.sweep_t1(1, taus_rng[0]);
-        });
+        if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0)
+            timed(times ? &times->exchange : nullptr, [&] { temperer.exchange(rngs); });
 
-        if ((i > 0) && (options.exchange_freq > 0) && (i % options.exchange_freq) == 0) {
-            timed(times ? &times->exchange : nullptr, [&] {
-                if (mt)
-                    temperer.exchange_mt(taus_rng);
-                else
-                    temperer.exchange(taus_rng[0]);
-            });
-        }
-
-        if (options.cluster_freq > 0 && (i > 0) && (i % options.cluster_freq) == 0) {
-            timed(times ? &times->cluster : nullptr, [&] {
-                if (mt)
-                    temperer.houdayer_mt(taus_rng);
-                else
-                    temperer.houdayer(taus_rng[0]);
-            });
-        }
+        if (options.cluster_freq > 0 && (i > 0) && (i % options.cluster_freq) == 0)
+            timed(times ? &times->cluster : nullptr, [&] { temperer.houdayer(rngs); });
     }
 
     // Name of the output files of the chain with index i_beta.
@@ -250,6 +231,8 @@ namespace {
 
         omp_set_num_threads(options.n_threads);
         spdlog::info("{} threads available, using {}", max_threads, options.n_threads);
+        if (options.n_threads > options.n_betas())
+            spdlog::info("Only {} chains: at most {} threads are used", options.n_betas(), options.n_betas());
 
         spdlog::info("Simulating a {} lattice", dims_string(dims));
 
@@ -257,8 +240,9 @@ namespace {
         auto rng = std::mt19937_64(options.seed);
         auto j_rng = std::mt19937_64(options.j_seed);
 
-        // Random number generator for simulations
-        lft::rand::taus_array taus_rng(max_threads);
+        // Random number generators for the simulation: one stream per beta chain, so that the results do not
+        // depend on the number of threads.
+        lft::rand::taus_array taus_rng(options.n_betas());
         taus_rng.gen_seeds(options.seed);
 
 
