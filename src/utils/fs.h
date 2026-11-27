@@ -11,6 +11,7 @@
 namespace fs = std::filesystem;
 #include <ostream>
 #include <fstream>
+#include <memory>
 
 
 fs::path make_file_path(const fs::path& data_dir, const std::string& prefix, int Lx, int Ly, const std::string& name,
@@ -38,4 +39,14 @@ fs::path make_file_path(const fs::path& data_dir, const std::string& prefix, con
 }
 
 
-std::fstream* optional_fstream_ptr(const fs::path& path, bool create, std::ios::openmode mode);
+// Opens `path` with `mode`; throws std::runtime_error naming the path if it cannot be opened.
+std::fstream open_checked(const fs::path& path, std::ios::openmode mode = std::ios::out);
+
+// Throws std::runtime_error naming `path` if `stream` is in a failed state, e.g. after a failed write.
+void check_stream(const std::ios& stream, const fs::path& path);
+
+// Closes `stream` (which flushes it) and throws if any write or the close failed.
+void close_checked(std::fstream& stream, const fs::path& path);
+
+// A stream opened with open_checked if `create` is true, otherwise nullptr.
+std::unique_ptr<std::fstream> optional_fstream_ptr(const fs::path& path, bool create, std::ios::openmode mode);

@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <utility>
@@ -114,18 +115,53 @@ namespace {
         return options.name + std::format("_b{:03d}", i_beta);
     }
 
-    // One output stream per beta, opened only if `create` is true (otherwise the pointers are null).
-    template <std::size_t N>
-    std::vector<std::unique_ptr<std::fstream>> open_beta_streams(const lft::ea::Options& options,
-                                                                 const std::array<std::uint32_t, N>& dims,
-                                                                 const std::string& prefix, const std::string& ext,
-                                                                 bool create, std::ios::openmode mode) {
-        std::vector<std::unique_ptr<std::fstream>> streams;
-        for (int i = 0; i < options.n_betas(); ++i) {
-            streams.emplace_back(optional_fstream_ptr(
-                make_file_path(options.data_dir, prefix, dims, beta_name(options, i), ext), create, mode));
+    // An output file: its path (for error messages) and the stream, which is null if the file is not written.
+    struct OutFile {
+        fs::path path;
+        std::unique_ptr<std::fstream> stream;
+
+        // Throws if a write to the stream has failed. Does nothing for a file that is not written.
+        void check() const {
+            if (stream)
+                check_stream(*stream, path);
         }
-        return streams;
+
+        void close() {
+            if (stream)
+                close_checked(*stream, path);
+        }
+    };
+
+    // One output file per beta, opened (and checked) only if `create` is true.
+    template <std::size_t N>
+    std::vector<OutFile> open_beta_files(const lft::ea::Options& options, const std::array<std::uint32_t, N>& dims,
+                                         const std::string& prefix, const std::string& ext, bool create,
+                                         std::ios::openmode mode) {
+        std::vector<OutFile> files;
+        for (int i = 0; i < options.n_betas(); ++i) {
+            auto path = make_file_path(options.data_dir, prefix, dims, beta_name(options, i), ext);
+            auto stream = optional_fstream_ptr(path, create, mode);
+            files.push_back({std::move(path), std::move(stream)});
+        }
+        return files;
+    }
+
+    // Creates the data directory if needed; throws if the path exists but is not a directory.
+    void ensure_data_dir(const fs::path& data_dir) {
+        if (!fs::exists(data_dir)) {
+            fs::create_directories(data_dir);
+            spdlog::info("Created data dir {}", data_dir.string());
+        }
+        else if (!fs::is_directory(data_dir)) {
+            throw std::runtime_error(std::format("--data-dir {} exists but is not a directory", data_dir.string()));
+        }
+    }
+
+    // Writes `text` to a new file at `path`, checking the open, the write and the close.
+    void write_text_file(const fs::path& path, const std::string& text) {
+        auto stream = open_checked(path, std::ios::out);
+        stream << text;
+        close_checked(stream, path);
     }
 
     // NaN/inf check on the bit pattern: -ffast-math (-ffinite-math-only) lets the compiler fold std::isfinite to true.
@@ -206,19 +242,11 @@ namespace {
         int n_replicas = options.n_replicas;
 
         spdlog::info("Writing to data dir = {}", options.data_dir);
-        auto options_stream = std::fstream(
-            make_file_path(options.data_dir, "opt", dims, options.name, "yaml"),
-            std::ios::out
-        );
-        options_stream << options.emit().c_str() << std::endl;
-        options_stream.close();
-
-        auto options_toml_stream = std::fstream(
-            make_file_path(options.data_dir, "opt", dims, options.name, "toml"),
-            std::ios::out
-        );
-        options_toml_stream << options.app.config_to_str(CLI::ConfigOutputMode::AllDefaults) << std::endl;
-        options_toml_stream.close();
+        ensure_data_dir(options.data_dir);
+        write_text_file(make_file_path(options.data_dir, "opt", dims, options.name, "yaml"),
+                        std::string(options.emit().c_str()) + "\n");
+        write_text_file(make_file_path(options.data_dir, "opt", dims, options.name, "toml"),
+                        options.app.config_to_str(CLI::ConfigOutputMode::AllDefaults) + "\n");
 
         omp_set_num_threads(options.n_threads);
         spdlog::info("{} threads available, using {}", max_threads, options.n_threads);
@@ -247,9 +275,15 @@ namespace {
 
         // Writing out the J link variables
         auto j_path = make_file_path(options.data_dir, "j", dims, options.name, "txt");
-        std::fstream j_file(j_path, std::fstream::out);
+        auto j_file = open_checked(j_path, std::ios::out);
         j_file << j_field << "\n";
-        j_file.close();
+        close_checked(j_file, j_path);
+
+        // Output files for the main loop: energy and magnetization, and configurations, one file per beta.
+        // They are opened before thermalization so that a bad path fails before any simulation time is spent.
+        auto em_files = open_beta_files(options, dims, "em", "txt", options.meas_freq > 0, std::ios::out);
+        auto cfg_files = open_beta_files(options, dims, "cfg", "bin", options.save_freq > 0,
+                                         std::ios::out | std::ios::binary);
 
         //Creating chains and replicas
 
@@ -288,11 +322,6 @@ namespace {
         }
         temperer.reset_stats();
 
-        // Creating output files: energy and magnetization, and configurations, one file per beta.
-        auto em_streams = open_beta_streams(options, dims, "em", "txt", options.meas_freq > 0, std::fstream::out);
-        auto cfg_streams = open_beta_streams(options, dims, "cfg", "bin", options.save_freq > 0,
-                                             std::ios::out | std::ios::binary);
-
 
         /***********************
          * Main loop
@@ -309,18 +338,20 @@ namespace {
             //Measurements
             if (options.meas_freq > 0 && (i % options.meas_freq) == 0) {
                 for (int j = 0; j < options.n_betas(); ++j) {
-                    lft::ea::measure_em(em_streams[j].get(), temperer.chains[j], j_field);
+                    lft::ea::measure_em(em_files[j].stream.get(), temperer.chains[j], j_field);
+                    em_files[j].check();
                 }
             }
 
             //Saving configurations
             if (options.save_freq > 0 && (i % options.save_freq) == 0) {
                 for (int i_beta = 0; i_beta < options.n_betas(); ++i_beta)
-                    if (cfg_streams[i_beta]) {
+                    if (auto& cfg = cfg_files[i_beta]; cfg.stream) {
                         for (int j = 0; j < n_replicas; ++j) {
-                            temperer.chains[i_beta][j]->write(*cfg_streams[i_beta]);
+                            temperer.chains[i_beta][j]->write(*cfg.stream);
                         }
-                        cfg_streams[i_beta]->flush();
+                        cfg.stream->flush();
+                        cfg.check();
                     }
             }
             print_progress_bar(i + 1, options.n_sweeps, start_main_all, 40);
@@ -333,13 +364,16 @@ namespace {
         spdlog::info("Exchange took {:.3} seconds", times.exchange.count());
         spdlog::info("Clusters took {:.3} seconds", times.cluster.count());
 
+        for (auto& f : em_files) f.close();
+        for (auto& f : cfg_files) f.close();
+
         if (options.exchange_freq > 0 && options.n_sweeps > 0) {
             temperer.print_stats(std::cout);
             auto exch_file = make_file_path(options.data_dir, "exch", dims, options.name, "txt");
             spdlog::info("Exchange file {}", exch_file.string());
-            std::fstream exch_stream(exch_file, std::fstream::out);
+            auto exch_stream = open_checked(exch_file, std::ios::out);
             temperer.print_stats(exch_stream);
-            exch_stream.close();
+            close_checked(exch_stream, exch_file);
         }
         temperer.reset_stats();
 
